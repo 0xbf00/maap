@@ -1,4 +1,5 @@
 from bundle.bundle import Bundle
+from bundle.types import BundleType
 
 import os.path
 
@@ -27,3 +28,8 @@ class Framework(Bundle):
         executable_name = info_dict[BUNDLE_EXECUTABLE_KEY]
 
         return self.absolute_path(os.path.join(EXECUTABLE_DIR, executable_name))
+
+    @staticmethod
+    def supported_types(self):
+        return [BundleType.FRAMEWORK]
+

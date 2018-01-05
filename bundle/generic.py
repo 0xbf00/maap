@@ -1,5 +1,5 @@
 from bundle.application import Application
-
+from bundle.types import BundleType
 
 class GenericBundle(Application):
     """If a bundle could not be identified as either being
@@ -14,3 +14,7 @@ class GenericBundle(Application):
 
     def is_mas_app(self):
         raise NotImplementedError
+
+    @staticmethod
+    def supported_types(self):
+        return [BundleType.GENERIC_BUNDLE]

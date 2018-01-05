@@ -9,14 +9,16 @@ import misc.plist as plist
 
 from bundle.types import BundleType
 
-class Bundle:
+import abc
+
+class Bundle(abc.ABC):
     """The Bundle class models Bundles on macOS.
 
     It is heavily influenced by methods of the NSBundle class
     for the Objective-C programming language. It forms the
     base class for specialised classes such as Application and Framework.
     """
-
+    @abc.abstractmethod
     def __init__(self, filepath):
         assert(Bundle.is_bundle(filepath))
 
@@ -41,29 +43,22 @@ class Bundle:
         normalized_path = Bundle.normalize_path(filepath)
         bundle_type = BundleType.type_for_bundle(normalized_path)
 
-        try:
-            if bundle_type == BundleType.APPLICATION:
-                return Application(filepath)
-            elif bundle_type == BundleType.FRAMEWORK:
-                return Framework(filepath)
-            elif bundle_type == BundleType.GENERIC_BUNDLE:
-                return GenericBundle(filepath)
-            elif bundle_type == BundleType.APP_EXTENSION:
-                return GenericBundle(filepath)
-            elif bundle_type == BundleType.PLUGIN:
-                return GenericBundle(filepath)
-            elif bundle_type == BundleType.KEXT:
-                return GenericBundle(filepath)
-            elif bundle_type == BundleType.XPC_EXTENSION:
-                return GenericBundle(filepath)
-            else:
-                raise NotImplementedError
-        except:
-            # Upon closer inspection during initialization,
-            # the bundle turns out not to be valid.
-            # TODO Implement logging infrastructure with different levels and different output files.
-            # print("{} does not appear to be valid bundle".format(filepath))
-            return None
+        if bundle_type == BundleType.APPLICATION:
+            return Application(filepath)
+        elif bundle_type == BundleType.FRAMEWORK:
+            return Framework(filepath)
+        elif bundle_type == BundleType.GENERIC_BUNDLE:
+            return GenericBundle(filepath)
+        elif bundle_type == BundleType.APP_EXTENSION:
+            return GenericBundle(filepath)
+        elif bundle_type == BundleType.PLUGIN:
+            return GenericBundle(filepath)
+        elif bundle_type == BundleType.KEXT:
+            return GenericBundle(filepath)
+        elif bundle_type == BundleType.XPC_EXTENSION:
+            return GenericBundle(filepath)
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def normalize_path(filepath : str) -> str:
@@ -132,12 +127,14 @@ class Bundle:
         abs_path = self.absolute_path(relative_path)
         return abs_path if os.path.exists(abs_path) else None
 
+    @abc.abstractmethod
     def executable_path(self) -> str:
         raise NotImplementedError()
 
     def app_store_receipt_exists(self) -> bool:
         return os.path.isfile(self.app_store_receipt_path())
 
+    @abc.abstractmethod
     def app_store_receipt_path(self) -> str:
         raise NotImplementedError()
 
@@ -152,5 +149,22 @@ class Bundle:
 
         return self.info_dict
 
+    @abc.abstractmethod
     def info_dictionary_path(self) -> str:
         raise NotImplementedError()
+
+    @staticmethod
+    @abc.abstractmethod
+    def supported_types(self) -> List[BundleType]:
+        """Returns a list of supported bundle types for the current class"""
+
+    def __str__(self):
+        type = self.__class__.__name__
+        version = "v" + self.info_dictionary()["CFBundleShortVersionString"] \
+            if "CFBundleShortVersionString" in self.info_dictionary() \
+            else "vUNKOWN"
+        identifier = self.info_dictionary()["CFBundleIdentifier"] \
+            if "CFBundleIdentifier" in self.info_dictionary() \
+            else "unknown.bundle"
+
+        return " - ".join([type, identifier, version])

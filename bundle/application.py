@@ -1,4 +1,5 @@
 from bundle.bundle import Bundle
+from bundle.types import BundleType
 
 from binary.binary import Binary
 
@@ -55,3 +56,7 @@ class Application(Bundle):
             - https://www.objc.io/issues/17-security/receipt-validation/
         """
         return self.app_store_receipt_exists()
+
+    @staticmethod
+    def supported_types(self):
+        return [BundleType.APPLICATION]
