@@ -29,6 +29,9 @@ class Framework(Bundle):
 
         return self.absolute_path(os.path.join(EXECUTABLE_DIR, executable_name))
 
+    def app_store_receipt_path(self):
+        raise NotImplementedError
+
     @staticmethod
     def supported_types(self):
         return [BundleType.FRAMEWORK]
