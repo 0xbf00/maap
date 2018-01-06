@@ -3,6 +3,7 @@ import pathlib
 
 # For comfortable directory walking
 import os
+import sys
 
 from typing import List
 import misc.plist as plist
@@ -20,8 +21,6 @@ class Bundle(abc.ABC):
     """
     @abc.abstractmethod
     def __init__(self, filepath):
-        assert(Bundle.is_bundle(filepath))
-
         normalized_path  = Bundle.normalize_path(filepath)
         self.filepath   = normalized_path
         self.bundle_type = BundleType.type_for_bundle(normalized_path)
@@ -36,9 +35,6 @@ class Bundle(abc.ABC):
         from bundle.application import Application
         from bundle.framework import Framework
         from bundle.generic import GenericBundle
-
-        if not Bundle.is_bundle(filepath):
-            return None
 
         normalized_path = Bundle.normalize_path(filepath)
         bundle_type = BundleType.type_for_bundle(normalized_path)
@@ -76,10 +72,17 @@ class Bundle(abc.ABC):
 
     @staticmethod
     def is_bundle(filepath : str) -> bool:
-        dirname = Bundle.normalize_path(filepath)
-        bundleType = BundleType.type_for_bundle(dirname)
+        normalized_path = Bundle.normalize_path(filepath)
+        bundle_type = BundleType.type_for_bundle(normalized_path)
 
-        return bundleType != BundleType.NONE
+        try:
+            bundle = Bundle.make(filepath)
+            return True
+        except:
+            if bundle_type != BundleType.NONE:
+                print("Bundle \"{}\" could not be read, despite seemingly being a bundle.".format(normalized_path))
+                      #file = sys.stderr)
+            return False
 
     def bundle_identifier(self) -> str:
         """Returns the bundle identifier of the current bundle.
@@ -109,7 +112,7 @@ class Bundle(abc.ABC):
         """Return only Frameworks (as opposed to all bundles) that are part of another bundle"""
         all_bundles = self.sub_bundles()
         return list(
-            filter(lambda x: x.bundleType == BundleType.FRAMEWORK,
+            filter(lambda x: x.bundle_type == BundleType.FRAMEWORK,
                    all_bundles)
             )
 
