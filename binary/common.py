@@ -24,23 +24,20 @@ def extract_embedded_info(binary) -> dict:
     return None
 
 
-def resolve_relative_path(path: str,
-                          loader_path: str,
-                          executable_path: str) -> str:
-    """Replaces @loader_path and @executable_path directives
-    with the correct absolute path"""
-
-    path = path.replace("@loader_path", loader_path, 1)
-    path = path.replace("@executable_path", executable_path, 1)
-    return path
-
-
-def resolve_rpath_lib(rpaths: List[str],
-                      path: str) -> str:
-    """Tries a number of different rpaths and returns the one
+def resolve_library_path(path: str,
+                         rpaths: List[str],
+                         loader_path: str,
+                         executable_path: str) -> str:
+    """Replaces @executable_path and @loader_path.
+    Tries a number of different rpaths and returns the one
     that results in a valid file being referenced. Throws an exception
     if no such file was found."""
 
+    # Replace @loader_path and @executable_path
+    path = path.replace("@loader_path", loader_path, 1)
+    path = path.replace("@executable_path", executable_path, 1)
+
+    # Check for @rpath and handle @rpath
     if not "@rpath" in path:
         return os.path.realpath(path)
 
@@ -63,6 +60,10 @@ def extract_rpaths(binary,
     for cmd in binary.commands:
         if isinstance(cmd, lief.MachO.RPathCommand):
             rpath = cmd.path
-            rpaths.append(resolve_relative_path(rpath, loader_path, executable_path))
+            # rpaths can contain @executable_path and @loader_path, also
+            rpath = rpath.replace("@loader_path", loader_path, 1)
+            rpath = rpath.replace("@executable_path", executable_path, 1)
+
+            rpaths.append(rpath)
 
     return rpaths

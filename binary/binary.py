@@ -1,9 +1,10 @@
 import lief
 
-from binary.common import extract_rpaths, resolve_rpath_lib, resolve_relative_path
+from binary.common import extract_rpaths, resolve_library_path
 
 import os.path
 from typing import List
+
 
 class Binary:
     def __init__(self, filepath, loader_path = None, executable_path = None):
@@ -20,14 +21,6 @@ class Binary:
 
         except lief.bad_file:
             raise ValueError("Executable not found")
-
-    def resolve_library_path(self, rpaths: List[str], path: str) -> str:
-        # Replace locations such as @loader_path and @executable_path
-        # first.
-        path = resolve_relative_path(path, self.loader_path, self.executable_path)
-        path = resolve_rpath_lib(rpaths, path)
-
-        return os.path.realpath(path)
 
     def application_libraries(self):
         """Return only the libraries / frameworks that are shipped as part of the
@@ -50,6 +43,10 @@ class Binary:
 
         linked_libs = [lib.name for lib in self.parsed_binary.libraries]
         rpaths = extract_rpaths(self.parsed_binary, self.loader_path, self.executable_path)
-        linked_libs = [self.resolve_library_path(rpaths, lib) for lib in linked_libs]
+        linked_libs = [resolve_library_path(lib,
+                                            rpaths,
+                                            self.loader_path,
+                                            self.executable_path)
+                       for lib in linked_libs]
 
         return linked_libs
