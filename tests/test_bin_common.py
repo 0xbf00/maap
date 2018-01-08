@@ -5,7 +5,7 @@ import binary.common
 
 import lief
 
-class BinCommonTest(unittest.TestCase):
+class TestBinCommon(unittest.TestCase):
     def test_resolve_library_path(self):
         calculator_data = {
             "path": "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
