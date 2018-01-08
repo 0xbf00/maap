@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import os.path
 
+
 class BundleType(Enum):
     APPLICATION    = auto()
     FRAMEWORK      = auto()

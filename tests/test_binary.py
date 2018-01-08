@@ -4,6 +4,7 @@ import unittest
 
 import binary.binary as bin
 
+
 class TestBinary(unittest.TestCase):
     def test_creation(self):
         # Successful loading
