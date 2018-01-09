@@ -2,7 +2,9 @@
 Support class for Plugin infrastructure. `Extractor` is the base class of
 every plugin in the system.
 """
-from bundle.application import Application
+from bundle.bundle import Bundle
+
+import logging
 
 import abc
 from enum import Enum, auto
@@ -14,12 +16,40 @@ class ResultCount(Enum):
     MULTIPLE       = auto()
 
 
-class Extractor(abc.ABC):
+def create_module_logger():
+    logger = logging.getLogger('extractor')
+    logger.setLevel(logging.INFO)
+    # Log events to file
+    # We do not log anything to the console, because there is no
+    # user present during execution who could benefit from
+    # such messages. Logs are purely needed for examining defects
+    # after the fact.
+    fh = logging.FileHandler("logs/extractor.log")
+    fh.setLevel(logging.INFO)
+    # Custom formatter for log messages
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+    return logger
+
+
+# This top level logger is not used at all. Its settings (formatting, output file, ...)
+# are used by lower-level loggers (those used in the individual classes)
+module_logger = create_module_logger()
+
+
+class AbstractExtractor(abc.ABC):
     """Abstract base class for the plugin infrastructure"""
+    def __init__(self):
+        self.logger = logging.getLogger("extractor.{}".format(self.__class__.extractor_name()))
 
     @classmethod
-    def extractor_name(cls):
-        return cls.__name__
+    @abc.abstractmethod
+    def resource_type(cls):
+        """The type of resource extracted by the particular resource.
+        This should be a single word only -- meaning something like "info", "executable", ...
+        This resource type is used for better log messages."""
+        pass
 
     @classmethod
     @abc.abstractmethod
@@ -35,9 +65,19 @@ class Extractor(abc.ABC):
         """
         pass
 
-    @classmethod
+    def log_error(self, msg):
+        """Log any errors that occur. Errors are conditions that are unusual and are
+        not occurring often.
+        One example for this would be that an application has no executable."""
+        self.logger.error(msg)
+
+    def log_info(self, msg):
+        """Log info messages to be able to mentally understand what happened during
+        program execution"""
+        self.logger.info(msg)
+
     @abc.abstractmethod
-    def extract_data(cls, app : Application, result_path : str, logger) -> bool:
+    def extract_data(self, app : Bundle, result_path : str) -> bool:
         """Extract data / files from the application `app`.
 
         A extractor should put these files at `result_path` and log any errors to `logger`.
