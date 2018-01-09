@@ -56,45 +56,45 @@ class XPCServicesExtractor(AbstractExtractor):
         from extractors.executable import ExecutableExtractor
         from extractors.info import InfoExtractor
 
-        # Fetch all bundles that are part of the application bundle
-        sub_bundles = app.sub_bundles()
-        for sub_bundle in sub_bundles:
-            if sub_bundle.bundle_type == BundleType.XPC_EXTENSION:
-                # Create a new folder for the XPC bundle found previously.
-                if not sub_bundle.has_bundle_identifier():
-                    self.log_error(
-                        "{} found in {} @ {} does not have a bundle id.".format(
-                            sub_bundle.bundle_type,
-                            app.bundle_type,
-                            app.filepath
-                        )
-                    )
-                    # Abort on error
-                    return False
-
-                bundle_id = sub_bundle.bundle_identifier()
-                xpc_result_path = os.path.join(result_path, bundle_id)
-                os.mkdir(xpc_result_path)
-
-                # Use ExecutableExtractor and InfoExtractor on the XPC bundle
-                success = ExecutableExtractor().extract_data(sub_bundle, xpc_result_path)
-                success &= InfoExtractor().extract_data(sub_bundle, xpc_result_path)
-                if not success:
-                    self.log_error(
-                        "Data extraction failed for xpc plugin extraction from {} @ {}. Aborting.".format(
-                            app.bundle_type,
-                            app.filepath
-                        )
-                    )
-
-                    # Cleanup: Delete directory
-                    shutil.rmtree(xpc_result_path)
-
-                    # Propagate errors
-                    return False
-
-            else:
-                # Simply ignore all other bundles encountered.
+        # Find all XPC bundles that are inside the overall application bundle
+        for sub_bundle in app.sub_bundles():
+            if not sub_bundle.bundle_type == BundleType.XPC_EXTENSION:
                 pass
+
+            # Create a new folder for the XPC bundle found previously.
+            if not sub_bundle.has_bundle_identifier():
+                self.log_error(
+                    "{} found in {} @ {} does not have a bundle id.".format(
+                        sub_bundle.bundle_type,
+                        app.bundle_type,
+                        app.filepath
+                    )
+                )
+                # Abort on error
+                return False
+
+            # Create sub-directory for XPC bundles found.
+            bundle_id = sub_bundle.bundle_identifier()
+            xpc_result_path = os.path.join(result_path, bundle_id)
+            os.mkdir(xpc_result_path)
+
+            # Use ExecutableExtractor and InfoExtractor on the XPC bundle
+            success = ExecutableExtractor().extract_data(sub_bundle, xpc_result_path)
+            success &= InfoExtractor().extract_data(sub_bundle, xpc_result_path)
+
+            # Abort immediately on failure. Overall extraction only works if every plugins could be extracted
+            if not success:
+                self.log_error(
+                    "Data extraction failed for xpc plugin extraction from {} @ {}. Aborting.".format(
+                        app.bundle_type,
+                        app.filepath
+                    )
+                )
+
+                # Cleanup: Delete directory
+                shutil.rmtree(xpc_result_path)
+
+                # Propagate errors
+                return False
 
         return True
