@@ -33,3 +33,23 @@ class BundleType(Enum):
             return BUNDLE_EXTENSIONS[ext]
         else:
             return BundleType.NONE
+
+    def __str__(self):
+        if self == BundleType.APPLICATION:
+            return "application"
+        elif self == BundleType.FRAMEWORK:
+            return "framework"
+        elif self == BundleType.APP_EXTENSION:
+            return "app-extension"
+        elif self == BundleType.PLUGIN:
+            return "plugin"
+        elif self == BundleType.KEXT:
+            return "kext"
+        elif self == BundleType.GENERIC_BUNDLE:
+            return "generic-bundle"
+        elif self == BundleType.XPC_EXTENSION:
+            return "xpc-extension"
+        elif self == BundleType.NONE:
+            return "none-bundle"
+        else:
+            assert(False and "No string value known for BundleType")
