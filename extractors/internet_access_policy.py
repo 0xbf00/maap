@@ -31,7 +31,7 @@ class IAPExtractor(AbstractExtractor):
 
     def extract_data(self, app: Bundle, result_path: str) -> bool:
         iap_path = app.path_for_resource("Contents/Resources/InternetAccessPolicy.plist")
-        if iap_path:
+        if not iap_path:
             self.log_info("IAP for application {} does not exist.".format(app.filepath))
             # This method _always_ returns True, because IAPs are optional and almost always
             # absent from applications
