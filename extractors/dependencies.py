@@ -44,14 +44,19 @@ class DependenciesExtractor(AbstractExtractor):
 
         if not (
             "CFBundleIdentifier" in info and
-            "CFBundleShortVersionString" in info
+            ("CFBundleShortVersionString" in info or "CFBundleVersion" in info) # Some plists only contain one of them
         ):
             return None
 
-        return {
-            "CFBundleIdentifier": info["CFBundleIdentifier"],
-            "CFBundleShortVersionString": info["CFBundleShortVersionString"]
+        result = {
+            "CFBundleIdentifier": info["CFBundleIdentifier"]
         }
+        if "CFBundleShortVersionString" in info:
+            result["CFBundleShortVersionString"] = info["CFBundleShortVersionString"]
+        else:
+            result["CFBundleVersion"] = info["CFBundleVersion"]
+
+        return result
 
     def extract_data(self, app: Bundle, result_path: str) -> bool:
         # Metadata is stored in a dictionary, which is later serialised to the disk.
