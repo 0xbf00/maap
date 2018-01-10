@@ -78,3 +78,43 @@ class TestBinCommon(unittest.TestCase):
                                                       "/Applications/iTunes.app/Contents/MacOS",
                                                       "/Applications/iTunes.app/Contents/MacOS"),
                       [])
+
+    def test_bundle_from_binary(self):
+        # For single-file utility, this function should return None, because the file is not
+        # part of any bundle
+        self.assertIsNone(binary.common.bundle_from_binary("/bin/ls"))
+        self.assertIsNone(binary.common.bundle_from_binary("/bin/ln"))
+
+        # For binaries that are part of a bundle but not the main executable in such a bundle,
+        # the function is also supposed to return None
+
+        # Note: iTunes is used here, because it comes pre-installed on macOS
+        # and it has the most complicated dependencies of any installed app, thus
+        # it can be used for many different purposes
+        self.assertIsNone(binary.common.bundle_from_binary("/Applications/iTunes.app/Contents/MacOS/iTunesASUHelper"))
+
+        # For non-existent binaries, the function should throw a ValueError
+        with self.assertRaises(ValueError):
+            # This binary surely does not exist
+            binary.common.bundle_from_binary("/bin/useful_test03837246")
+
+        # If the main executable is supplied, the corresponding bundle should be found
+        self.assertEqual(
+            binary.common.bundle_from_binary(
+                "/Applications/iTunes.app/Contents/MacOS/iTunes"
+            ).filepath,
+            "/Applications/iTunes.app")
+
+        # This should also work for other types of bundles
+        self.assertEqual(
+            binary.common.bundle_from_binary(
+                "/Applications/iTunes.app/Contents/Frameworks/iPodUpdater.framework/Versions/A/iPodUpdater"
+            ).filepath,
+            "/Applications/iTunes.app/Contents/Frameworks/iPodUpdater.framework"
+        )
+        self.assertEqual(
+            binary.common.bundle_from_binary(
+                "/Applications/iTunes.app/Contents/PlugIns/iTunesStorageExtension.appex/Contents/MacOS/iTunesStorageExtension"
+            ).filepath,
+            "/Applications/iTunes.app/Contents/PlugIns/iTunesStorageExtension.appex"
+        )

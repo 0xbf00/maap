@@ -3,6 +3,8 @@
 import lief
 import plistlib
 
+from bundle.bundle import Bundle
+
 import os.path
 
 from typing import List
@@ -67,3 +69,31 @@ def extract_rpaths(binary,
             rpaths.append(rpath)
 
     return rpaths
+
+
+def bundle_from_binary(bin_path : str) -> Bundle:
+    """Finds the bundle that contains a specific binary.
+
+    Throws a ValueError if the supplied binary is
+        a) not a binary
+        b) does not exist
+
+    Returns
+        On success: The bundle
+        On failure: None
+    """
+    # Binary has to be valid
+    if not (os.path.exists(bin_path) and lief.is_macho(bin_path)):
+        raise ValueError("Invalid executable specified")
+
+    containing_dir = os.path.dirname(bin_path)
+    while containing_dir != "/":
+        # Potential bundle found
+        if Bundle.is_bundle(containing_dir):
+            bun = Bundle.make(containing_dir)
+            if os.path.samefile(bun.executable_path(), bin_path):
+                return bun
+        # Move up one level
+        containing_dir = os.path.dirname(containing_dir)
+
+    return None
