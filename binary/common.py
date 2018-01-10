@@ -4,10 +4,26 @@ import lief
 import plistlib
 
 from bundle.bundle import Bundle
+from misc.hash import sha256_file
 
 import os.path
 
 from typing import List
+
+
+def _helper_samefile(fileA, fileB):
+    if os.path.samefile(fileA, fileB):
+        return True
+    else:
+        # For some developers, using the proper Framework format appears to be impossible.
+        # Most commonly, developers end up copying the executable into another folder.
+        # This obviously blows up the resulting bundle size.
+        # To detect these cases, a candidate bundle is accepted, if the underlying files
+        # are identical (those advertised by the framework and the one returned by our bundle.framework
+        # implementation)
+        hash_a = sha256_file(fileA)
+        hash_b = sha256_file(fileB)
+        return hash_a == hash_b
 
 
 def extract_embedded_info(binary) -> dict:
@@ -91,8 +107,9 @@ def bundle_from_binary(bin_path : str) -> Bundle:
         # Potential bundle found
         if Bundle.is_bundle(containing_dir):
             bun = Bundle.make(containing_dir)
-            if os.path.samefile(bun.executable_path(), bin_path):
+            if _helper_samefile(bun.executable_path(), bin_path):
                 return bun
+
         # Move up one level
         containing_dir = os.path.dirname(containing_dir)
 
