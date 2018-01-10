@@ -59,7 +59,7 @@ class XPCServicesExtractor(AbstractExtractor):
         # Find all XPC bundles that are inside the overall application bundle
         for sub_bundle in app.sub_bundles():
             if not sub_bundle.bundle_type == BundleType.XPC_EXTENSION:
-                pass
+                continue
 
             # Create a new folder for the XPC bundle found previously.
             if not sub_bundle.has_bundle_identifier():
