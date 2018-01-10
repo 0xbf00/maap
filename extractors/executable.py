@@ -1,6 +1,5 @@
 from extractors.base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
-from bundle.application import Application
 
 import os.path
 import shutil

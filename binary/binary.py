@@ -3,7 +3,6 @@ import lief
 from binary.common import extract_rpaths, resolve_library_path
 
 import os.path
-from typing import List
 
 
 class Binary:
