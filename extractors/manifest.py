@@ -62,7 +62,7 @@ class ManifestExtractor(AbstractExtractor):
         assert(isinstance(app, Application))
 
         manifest = self._build_manifest(app)
-        with open(os.path.join(result_path, "manifest.json")) as outfile:
+        with open(os.path.join(result_path, "manifest.json"), "w") as outfile:
             json.dump(manifest, outfile, indent=4)
 
         return True
