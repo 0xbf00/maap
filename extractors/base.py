@@ -41,7 +41,7 @@ module_logger = create_module_logger()
 class AbstractExtractor(abc.ABC):
     """Abstract base class for the plugin infrastructure"""
     def __init__(self):
-        self.logger = logging.getLogger("extractor.{}".format(self.__class__.extractor_name()))
+        self.logger = logging.getLogger("extractor.{}".format(self.__class__.resource_type()))
 
     @classmethod
     @abc.abstractmethod
@@ -83,3 +83,36 @@ class AbstractExtractor(abc.ABC):
         A extractor should put these files at `result_path` and log any errors to `logger`.
         The return code should be `True` on success, `False` otherwise. """
         pass
+
+
+def all_extractors():
+    """Returns a list of all extractor classes"""
+
+    import os.path
+    import importlib
+    import inspect
+
+    extractors = []
+
+    # Rudimentary parsing of the directory to find all python files
+    plugin_dir = os.path.dirname(__file__)
+    # Assuming the plugins are all stored in the extractors/ dir where also
+    # the base class is stored.
+    for filename in os.listdir(plugin_dir):
+        if filename == "base.py":
+            continue
+
+        if filename.endswith(".py"):
+            module = importlib.import_module("extractors.{}".format(
+                os.path.splitext(filename)[0]
+            ))
+            classes = inspect.getmembers(module, lambda x: inspect.isclass(x))
+            for cls_name, cls in classes:
+                if not issubclass(cls, AbstractExtractor):
+                    continue
+
+                if cls == AbstractExtractor:
+                    continue
+                extractors.append(cls)
+
+    return extractors
