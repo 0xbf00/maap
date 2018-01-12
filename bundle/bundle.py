@@ -79,9 +79,8 @@ class Bundle(abc.ABC):
             bundle = Bundle.make(filepath)
             return True
         except:
-            if bundle_type != BundleType.NONE:
-                print("Bundle \"{}\" could not be read, despite seemingly being a bundle.".format(normalized_path))
-                      #file = sys.stderr)
+            # if bundle_type != BundleType.NONE:
+                # print("Bundle \"{}\" could not be read, despite seemingly being a bundle.".format(normalized_path))
             return False
 
     def bundle_identifier(self) -> str:
