@@ -73,7 +73,17 @@ def extract_rpaths(binary,
     """Extracts @rpath commands from a binary and returns the list
     of paths encountered."""
 
-    rpaths = []
+    rpaths = [
+        "/usr/lib", # The MathViz.app bundle contains a load instruction
+                    # referencing @rpath/libobjc.A.dylib, which the linker
+                    # resolves to /usr/lib/libobjc.A.dylib, despite there
+                    # not being a corresponding @rpath command. Checking
+                    # out the dyld sources, a few standard paths become
+                    # apparent (DYLD_FALLBACK_LIBRARY_PATH)
+        "/usr/local/lib",
+        "/lib",
+        os.path.join(os.path.expanduser("~"), "lib")
+    ]
 
     for cmd in binary.commands:
         if isinstance(cmd, lief.MachO.RPathCommand):
@@ -107,10 +117,28 @@ def bundle_from_binary(bin_path : str) -> Bundle:
         # Potential bundle found
         if Bundle.is_bundle(containing_dir):
             bun = Bundle.make(containing_dir)
-            if _helper_samefile(bun.executable_path(), bin_path):
+            if not os.path.isfile(bun.executable_path()):
+                # File specified in Info.plist does not exist.
+                # This sometimes happens for applications with incorrectly
+                # configured frameworks. In these cases, as a workaround,
+                # we simply check whether the filepath of the current bundle
+                # is contained in the `bin_path`.
+                if os.path.commonpath([bun.filepath, bin_path]) == bun.filepath:
+                    return bun
+            elif _helper_samefile(bun.executable_path(), bin_path):
                 return bun
 
         # Move up one level
         containing_dir = os.path.dirname(containing_dir)
 
     return None
+
+
+def load_cmd_is_weak(lc) -> bool:
+    """Checks whether the load command `lc` is a LC_LOAD_WEAK_DYLIB command
+    that is allowed to fail
+
+    Unfortunately, so far, lief does not support this out of the box."""
+    raw_data = lc.data
+    # 0x18 is the identifier for LC_LOAD_WEAK_DYLIB
+    return raw_data[0] == 0x18

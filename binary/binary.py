@@ -1,6 +1,6 @@
 import lief
 
-from binary.common import extract_rpaths, resolve_library_path
+from binary.common import extract_rpaths, resolve_library_path, load_cmd_is_weak
 
 import os.path
 
@@ -40,12 +40,26 @@ class Binary:
     def linked_libraries(self):
         assert(self.parsed_binary)
 
-        linked_libs = [lib.name for lib in self.parsed_binary.libraries]
+        linked_libs = list(self.parsed_binary.libraries)
         rpaths = extract_rpaths(self.parsed_binary, self.loader_path, self.executable_path)
-        linked_libs = [resolve_library_path(lib,
-                                            rpaths,
-                                            self.loader_path,
-                                            self.executable_path)
-                       for lib in linked_libs]
 
-        return linked_libs
+        resolved_libs = []
+        for lib in linked_libs:
+            if load_cmd_is_weak(lib):
+                # Weak load commands are allowed to fail!
+                try:
+                    resolved_lib = resolve_library_path(lib.name,
+                                                        rpaths,
+                                                        self.loader_path,
+                                                        self.executable_path)
+                    resolved_libs.append(resolved_lib)
+                except ValueError:
+                    continue
+            else:
+                resolved_lib = resolve_library_path(lib.name,
+                                                    rpaths,
+                                                    self.loader_path,
+                                                    self.executable_path)
+                resolved_libs.append(resolved_lib)
+
+        return resolved_libs
