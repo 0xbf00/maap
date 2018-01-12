@@ -18,12 +18,11 @@ class DependenciesExtractor(AbstractExtractor):
     for outdated libraries.
 
     The information is stored as JSON in the file dependencies.json. Each
-    entry contains the dependency's filename, the corresponding bundle-id,
-    as well its version number. If the corresponding bundle could not be found,
-    attempts are made to extract the Info.plist from the binary itself.
-    If that also fails, the information regarding this dependency is thrown out
-    (Because single dylibs contain little information of interest, and these are the
-    only files that should fail)
+    entry contains the dependency's filename, and, if available,
+    the corresponding bundle-id, as well its version number.
+    If the corresponding bundle could not be found, attempts are made to extract
+    the Info.plist from the binary itself. If that also fails, only the path
+    for the dependency is recorded.
     """
     @classmethod
     def resource_type(cls):
@@ -34,26 +33,20 @@ class DependenciesExtractor(AbstractExtractor):
         # The result is just a single JSON file listing the dependencies
         return ResultCount.SINGLE
 
-    def _info_extract_required(self, info):
-        """Extracts the required keys (CFBundleIdentifier and CFBundleShortVersionString)
+    def _extract_dependency_infos(self, info):
+        """Extracts the required keys (CFBundleIdentifier and CFBundleShortVersionString / CFBundleVersion)
         from the info.plist supplied as a dictionary to this method.
 
-        Returns None in case the information could not be extracted, otherwise returns
-        a dictionary containing the two aforementioned keys."""
+        In case only a subset of this information is provided, only a subset is retunred"""
         assert(isinstance(info, dict))
 
-        if not (
-            "CFBundleIdentifier" in info and
-            ("CFBundleShortVersionString" in info or "CFBundleVersion" in info) # Some plists only contain one of them
-        ):
-            return None
+        result = dict()
+        if "CFBundleIdentifier" in info:
+            result["CFBundleIdentifier"] = info["CFBundleIdentifier"]
 
-        result = {
-            "CFBundleIdentifier": info["CFBundleIdentifier"]
-        }
         if "CFBundleShortVersionString" in info:
             result["CFBundleShortVersionString"] = info["CFBundleShortVersionString"]
-        else:
+        elif "CFBundleVersion" in info:
             result["CFBundleVersion"] = info["CFBundleVersion"]
 
         return result
@@ -72,47 +65,24 @@ class DependenciesExtractor(AbstractExtractor):
             # Relative path component from the underlying app to the dependency.
             dependency_rel = fs.path_remove_prefix(dependency, app.filepath + "/")
 
-            if not dependency_bundle:
-                if dependency.endswith(".dylib"):
-                    # Dylib's can contain an Info.plist file embedded in them!
-                    # Try to extract this information as a fallback
-                    embedded_info = binary.common.extract_embedded_info(
-                        lief.parse(dependency)
-                    )
-                    if embedded_info:
-                        required_info = self._info_extract_required(embedded_info)
-                        if not required_info:
-                            self.log_error(
-                                "Embedded Info.plist found for dependency {} of application {}, but required keys were not present".format(
-                                    dependency,
-                                    app.filepath
-                                )
-                            )
-                            # It is considered a violation if the Info.plist was extracted but did not contain the
-                            # required keys.
-                            return False
-                        else:
-                            dependencies_metadata[dependency_rel] = required_info
-                    else:
-                        self.log_info("Found DYLIB dependency {} for application {}, ignored because lacking Info.plist".format(
-                            dependency, app.filepath
-                        ))
-                        # Also record simple .dylibs.
-                        dependencies_metadata[dependency_rel] = {}
-                        continue
-                else:
-                    self.log_error("Unable to find bundle for dependency {} of app {}".format(
-                        dependency, app.filepath))
-                    return False
-            else:
-                required_info = self._info_extract_required(dependency_bundle.info_dictionary())
-                if not required_info:
-                    self.log_error("Info.plist found for dependency {} of app {} does not contain required keys.".format(
-                        dependency, app.filepath
-                    ))
-                    return False
+            dependency_infos = None
 
-                dependencies_metadata[dependency_rel] = required_info
+            if dependency_bundle:
+                # Use Info.plist from bundle
+                dependency_infos = dependency_bundle.info_dictionary()
+            else:
+                # Try to instead use embedded information
+                # Note: extract_embedded_info returns None on failure
+                dependency_infos = binary.common.extract_embedded_info(
+                    lief.parse(dependency)
+                )
+
+            if dependency_infos:
+                # Record entry along with further information
+                dependencies_metadata[dependency_rel] = self._extract_dependency_infos(dependency_infos)
+            else:
+                # Just record the path to the dependency
+                dependencies_metadata[dependency_rel] = {}
 
         # Store the information to the filesystem
         with open(os.path.join(result_path, "dependencies.json"), "w") as outfile:
