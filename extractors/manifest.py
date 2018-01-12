@@ -1,7 +1,7 @@
 from extractors.base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 from bundle.application import Application
-
+import misc.filesystem as fs
 from misc.hash import sha256_file
 
 import os.path
@@ -28,12 +28,6 @@ class ManifestExtractor(AbstractExtractor):
     def result_count(cls):
         return ResultCount.SINGLE
 
-    def _remove_prefix(self, input: str, prefix: str) -> str:
-        """Removes a prefix from a string, if the string has such a prefix."""
-        if input.startswith(prefix):
-            return input[len(prefix):]
-        return input
-
     def _build_manifest(self, app) -> list:
         hashes = dict()
 
@@ -51,7 +45,7 @@ class ManifestExtractor(AbstractExtractor):
         output = []
         for key in hashes.keys():
             entry = dict()
-            entry["filepath"] = self._remove_prefix(key, app.filepath)
+            entry["filepath"] = fs.path_remove_prefix(key, app.filepath + "/")
             entry["filesize"] = os.path.getsize(key)
             entry["hash"] = hashes[key]
             output.append(entry)
