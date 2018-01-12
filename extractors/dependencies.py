@@ -1,7 +1,7 @@
 from extractors.base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 from bundle.application import Application
-
+import misc.filesystem as fs
 import binary.common
 
 import os.path
@@ -69,6 +69,8 @@ class DependenciesExtractor(AbstractExtractor):
         app_dependencies = app.executable().application_libraries()
         for dependency in app_dependencies:
             dependency_bundle = binary.common.bundle_from_binary(dependency)
+            # Relative path component from the underlying app to the dependency.
+            dependency_rel = fs.path_remove_prefix(dependency, app.filepath + "/")
 
             if not dependency_bundle:
                 if dependency.endswith(".dylib"):
@@ -90,17 +92,18 @@ class DependenciesExtractor(AbstractExtractor):
                             # required keys.
                             return False
                         else:
-                            assert(dependency not in dependencies_metadata)
-                            dependencies_metadata[dependency] = required_info
+                            dependencies_metadata[dependency_rel] = required_info
                     else:
                         self.log_info("Found DYLIB dependency {} for application {}, ignored because lacking Info.plist".format(
                             dependency, app.filepath
                         ))
+                        # Also record simple .dylibs.
+                        dependencies_metadata[dependency_rel] = {}
                         continue
-
-                self.log_info("Unable to find bundle for dependency {} of app {}".format(
-                    dependency, app.filepath))
-                return False
+                else:
+                    self.log_error("Unable to find bundle for dependency {} of app {}".format(
+                        dependency, app.filepath))
+                    return False
             else:
                 required_info = self._info_extract_required(dependency_bundle.info_dictionary())
                 if not required_info:
@@ -109,8 +112,7 @@ class DependenciesExtractor(AbstractExtractor):
                     ))
                     return False
 
-                assert(dependency not in dependencies_metadata)
-                dependencies_metadata[dependency] = required_info
+                dependencies_metadata[dependency_rel] = required_info
 
         # Store the information to the filesystem
         with open(os.path.join(result_path, "dependencies.json"), "w") as outfile:
