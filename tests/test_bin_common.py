@@ -66,7 +66,7 @@ class TestBinCommon(unittest.TestCase):
 
         bin = lief.parse("/Applications/WhatsApp.app/Contents/MacOS/WhatsApp")
 
-        actual_whatsapp_rpaths = ["/Applications/WhatsApp.app/Contents/MacOS/../Frameworks"]
+        actual_whatsapp_rpaths = binary.common.RPATH_DEFAULT_PATHS + ["/Applications/WhatsApp.app/Contents/MacOS/../Frameworks"]
         computed_whatsapp_rpaths = binary.common.extract_rpaths(bin,
                                                                 "/Applications/WhatsApp.app/Contents/MacOS",
                                                                 "/Applications/WhatsApp.app/Contents/MacOS")
@@ -77,7 +77,7 @@ class TestBinCommon(unittest.TestCase):
         self.assertEqual(binary.common.extract_rpaths(itunes_bin,
                                                       "/Applications/iTunes.app/Contents/MacOS",
                                                       "/Applications/iTunes.app/Contents/MacOS"),
-                      [])
+                      binary.common.RPATH_DEFAULT_PATHS)
 
     def test_bundle_from_binary(self):
         # For single-file utility, this function should return None, because the file is not
