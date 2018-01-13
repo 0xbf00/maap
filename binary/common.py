@@ -4,27 +4,23 @@ import lief
 import plistlib
 
 from bundle.bundle import Bundle
-from misc.hash import sha256_file
+import misc.filesystem as fs
 
 import os.path
 
 from typing import List
 
-
-def _helper_samefile(fileA, fileB):
-    if os.path.samefile(fileA, fileB):
-        return True
-    else:
-        # For some developers, using the proper Framework format appears to be impossible.
-        # Most commonly, developers end up copying the executable into another folder.
-        # This obviously blows up the resulting bundle size.
-        # To detect these cases, a candidate bundle is accepted, if the underlying files
-        # are identical (those advertised by the framework and the one returned by our bundle.framework
-        # implementation)
-        hash_a = sha256_file(fileA)
-        hash_b = sha256_file(fileB)
-        return hash_a == hash_b
-
+RPATH_DEFAULT_PATHS = [
+    "/usr/lib",  # The MathViz.app bundle contains a load instruction
+    # referencing @rpath/libobjc.A.dylib, which the linker
+    # resolves to /usr/lib/libobjc.A.dylib, despite there
+    # not being a corresponding @rpath command. Checking
+    # out the dyld sources, a few standard paths become
+    # apparent (DYLD_FALLBACK_LIBRARY_PATH)
+    "/usr/local/lib",
+    "/lib",
+    os.path.join(os.path.expanduser("~"), "lib")
+]
 
 def extract_embedded_info(binary) -> dict:
     """Returns the contents of the section
@@ -73,17 +69,7 @@ def extract_rpaths(binary,
     """Extracts @rpath commands from a binary and returns the list
     of paths encountered."""
 
-    rpaths = [
-        "/usr/lib", # The MathViz.app bundle contains a load instruction
-                    # referencing @rpath/libobjc.A.dylib, which the linker
-                    # resolves to /usr/lib/libobjc.A.dylib, despite there
-                    # not being a corresponding @rpath command. Checking
-                    # out the dyld sources, a few standard paths become
-                    # apparent (DYLD_FALLBACK_LIBRARY_PATH)
-        "/usr/local/lib",
-        "/lib",
-        os.path.join(os.path.expanduser("~"), "lib")
-    ]
+    rpaths = RPATH_DEFAULT_PATHS.copy()
 
     for cmd in binary.commands:
         if isinstance(cmd, lief.MachO.RPathCommand):
@@ -125,7 +111,7 @@ def bundle_from_binary(bin_path : str) -> Bundle:
                 # is contained in the `bin_path`.
                 if os.path.commonpath([bun.filepath, bin_path]) == bun.filepath:
                     return bun
-            elif _helper_samefile(bun.executable_path(), bin_path):
+            elif fs.is_same_file(bun.executable_path(), bin_path):
                 return bun
 
         # Move up one level

@@ -1,5 +1,21 @@
 """Filesystem related util functions"""
 import os.path
+from misc.hash import sha256_file
+
+
+def is_same_file(fileA, fileB):
+    if os.path.samefile(fileA, fileB):
+        return True
+    else:
+        # For some developers, using the proper Framework format appears to be impossible.
+        # Most commonly, developers end up copying the executable into another folder.
+        # This obviously blows up the resulting bundle size.
+        # To detect these cases, a candidate bundle is accepted, if the underlying files
+        # are identical (those advertised by the framework and the one returned by our bundle.framework
+        # implementation)
+        hash_a = sha256_file(fileA)
+        hash_b = sha256_file(fileB)
+        return hash_a == hash_b
 
 
 def path_remove_prefix(path: str, prefix: str) -> str:
