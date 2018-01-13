@@ -4,6 +4,7 @@ every plugin in the system.
 """
 from bundle.bundle import Bundle
 
+from misc.logger import create_logger
 import logging
 
 import abc
@@ -16,26 +17,9 @@ class ResultCount(Enum):
     MULTIPLE       = auto()
 
 
-def create_module_logger():
-    logger = logging.getLogger('extractor')
-    logger.setLevel(logging.INFO)
-    # Log events to file
-    # We do not log anything to the console, because there is no
-    # user present during execution who could benefit from
-    # such messages. Logs are purely needed for examining defects
-    # after the fact.
-    fh = logging.FileHandler("logs/extractor.log")
-    fh.setLevel(logging.INFO)
-    # Custom formatter for log messages
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-    return logger
-
-
 # This top level logger is not used at all. Its settings (formatting, output file, ...)
 # are used by lower-level loggers (those used in the individual classes)
-module_logger = create_module_logger()
+module_logger = create_logger("extractor")
 
 
 class AbstractExtractor(abc.ABC):
