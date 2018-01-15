@@ -35,6 +35,22 @@ import functools
 from misc.logger import create_logger
 
 
+import signal
+
+
+class SignalIntelligence:
+    """A simple class to encapsulate reacting to signals (SIGINT, SIGTERM) and to exit the program
+    gracefully in the event these signals are delivered."""
+    should_exit = False
+
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.process_signal)
+        signal.signal(signal.SIGTERM, self.process_signal)
+
+    def process_signal(self, signum, frame):
+        self.should_exit = True
+
+
 # ------------------
 # Utility functions
 def folder_for_app(results_dir : str, app : Bundle) -> str:
@@ -98,7 +114,12 @@ def main(args):
     # Instantiate the extractors once
     info_extractors = [cls() for cls in extractors.base.all_extractors()]
 
+    exit_watcher = SignalIntelligence()
+
     for app_path in os.listdir(apps_path):
+        if exit_watcher.should_exit:
+            break
+
         full_path = os.path.join(apps_path, app_path)
 
         if app_path.endswith(".app") and Bundle.is_bundle(full_path):
