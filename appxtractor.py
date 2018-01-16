@@ -86,8 +86,19 @@ def run_extractor(extractor, app, app_result_path) -> bool:
         output_directory = os.path.join(app_result_path, extractor.resource_type())
         os.mkdir(output_directory)
 
-    return extractor.extract_data(app, output_directory)
+    status_code = extractor.extract_data(app, output_directory)
 
+    # Verify that the program used the output directory, in case MULTIPLE results where possible.
+    # Otherwise, delete the output directory
+    if extractor.result_count() == extractors.base.ResultCount.MULTIPLE:
+        output_contents = os.listdir(output_directory)
+        if output_contents == []:
+            shutil.rmtree(output_directory)
+        # Make sure we also remove the directory if only a temporary file exists there.
+        elif len(output_contents) == 1 and output_contents[0] == ".DS_Store":
+            shutil.rmtree(output_directory)
+
+    return status_code
 
 def main(args):
     logger = create_logger('appxtractor')
