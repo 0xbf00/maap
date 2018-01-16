@@ -25,7 +25,6 @@ run, each application is examined (though already processed versions are not re-
 is no shared state, apart from the results folder.
 """
 
-import sys
 import os.path
 
 from bundle.bundle import Bundle
@@ -34,7 +33,7 @@ import shutil
 import functools
 from misc.logger import create_logger
 
-
+import argparse
 import signal
 
 
@@ -76,7 +75,11 @@ def run_extractor(extractor, app, app_result_path) -> bool:
     """Run a single extractor.
 
     If the extractor writes out more than a single result, create a dedicated
-    directory for that directory. Returns the status code of the extractor"""
+    directory for that directory. This directory is only retained if the extractor
+    actually writes to it. In case no results are found there, the directory is removed
+    again.
+
+    Returns the status code of the extractor"""
 
     output_directory = app_result_path
 
@@ -100,73 +103,94 @@ def run_extractor(extractor, app, app_result_path) -> bool:
 
     return status_code
 
-def main(args):
+
+def process_app(app_path, info_extractors, logger, output):
+    """Process an app using the supplied `info_extractors`
+
+    Log potentially relevant information to `logger` and return results
+    at `output`
+    """
+
+    app = Bundle.make(app_path)
+
+    output_folder = folder_for_app(output, app)
+    if os.path.exists(output_folder):
+        logger.info(
+            "Skipping processing of {} @ {}, because the app has already been processed.".format(app, app.filepath)
+        )
+        return
+
+    # Make basefolder
+    os.makedirs(output_folder)
+
+    try:
+        extraction_status = functools.reduce(
+            lambda status, extractor: status & run_extractor(extractor, app, output_folder),
+            info_extractors,
+            True
+        )
+        if not extraction_status:
+            logger.info("Processing failed for {} @ {}".format(app, app.filepath))
+    except:
+        logger.error(
+            "Exception occurred during processing of {} @ {}".format(app, app.filepath)
+        )
+
+
+def main():
     logger = create_logger('appxtractor')
     logger.info("appxtractor starting")
 
-    # TODO args parsing
-    args = args
+    parser = argparse.ArgumentParser(description='Extract information from Mac Apps.')
+    parser.add_argument('-i', '--input', required=True,
+                        help='The directory that contains the applications to analyse.')
+    parser.add_argument('-o', '--output', required=True,
+                        help='Output directory: This directory shall also be passed to this program to update an existing output folder.')
+    parser.add_argument('--all-apps', dest='all_apps', default=False, action='store_true',
+                        help='Analyse all apps. By default, only Mac AppStore apps are analysed.')
 
-    # For now, assume there are 2 (3) arguments:
-    # The first one is the directory to the installed apps,
-    # the second one is the results directory
-    # the third one (optional) is whether to do a dry run
-    # that is, running without touching the disk permanently
-    apps_path = None
-    results_path = None
-    dry_run = len(args) >= 3
-
-    if len(args) >= 2:
-        apps_path = args[0]
-        results_path = args[1]
-
-    print("Assuming apps @ {} and results @ {}".format(apps_path, results_path))
+    args = parser.parse_args()
 
     # Instantiate the extractors once
     info_extractors = [cls() for cls in extractors.base.all_extractors()]
 
     exit_watcher = SignalIntelligence()
 
-    for app_path in os.listdir(apps_path):
+
+    print("[+] Analysing apps at \"{}\"".format(args.input))
+
+    all_apps = []
+
+    for app_path in os.listdir(args.input):
+        full_path = os.path.join(args.input, app_path)
+        if app_path.endswith(".app") and Bundle.is_bundle(full_path):
+            bundle = Bundle.make(full_path)
+            if args.all_apps:
+                all_apps.append(full_path)
+            elif bundle.is_mas_app():
+                all_apps.append(full_path)
+
+    print("[+] Found {} apps to analyse.".format(len(all_apps)))
+    print("\n[+] Press Ctrl+C to cancel analysis (can later be resumed)")
+
+    for (index, app_path) in enumerate(all_apps):
+        # Print crude progress bar
         if exit_watcher.should_exit:
             break
 
-        full_path = os.path.join(apps_path, app_path)
+        print('\r[+] Progress: {:0>5d}/{:0>5d} apps done -- {:2.4f}%'.format(index+1,
+                                                                             len(all_apps),
+                                                                             ((index+1) / len(all_apps)) * 100),
+              end='')
 
-        if app_path.endswith(".app") and Bundle.is_bundle(full_path):
-            app = Bundle.make(full_path)
-            if not app.is_mas_app():
-                continue
+        process_app(app_path=app_path,
+                    info_extractors=info_extractors,
+                    logger=logger,
+                    output=args.output)
 
-            output_folder = folder_for_app(results_path, app)
-            if os.path.exists(output_folder):
-                logger.info(
-                    "Skipping processing of {} @ {}, because the app has already been processed.".format(app, app.filepath)
-                )
-                continue
-
-            # Make basefolder
-            os.makedirs(output_folder)
-
-            try:
-                extraction_status = functools.reduce(
-                    lambda status, extractor: status & run_extractor(extractor, app, output_folder),
-                    info_extractors,
-                    True
-                )
-                if not extraction_status:
-                    logger.info("Processing failed for {} @ {}".format(app, app.filepath))
-            except:
-                logger.error(
-                    "Exception occurred during processing of {} @ {}".format(app, app.filepath)
-                )
-
-            # Remove results again from filesystem
-            if dry_run:
-                shutil.rmtree(output_folder)
 
     logger.info("appxtractor stopping")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
