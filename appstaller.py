@@ -24,6 +24,7 @@ class MacApp:
 
     def __init__(self, itemID: str):
         self.itemID = itemID
+        self.api_result = None
 
     def get_price(self) -> float:
         """getPrice() uses the iTunes API to retrieve the current price
@@ -36,6 +37,7 @@ class MacApp:
             obj = json.loads(response.content.decode('utf-8'))
             if obj["resultCount"] >= 1:
                 app_info = obj["results"][0]
+                self.api_result = app_info
                 if "price" in app_info:
                     return app_info["price"]
                 else:
@@ -44,6 +46,14 @@ class MacApp:
                 logger.info("No results for API request. Skipping.")
 
         return -1.0
+
+    def min_version(self):
+        assert(self.api_result != None)
+
+        if "minimumOsVersion" in self.api_result:
+            return self.api_result["minimumOsVersion"]
+        else:
+            return None
 
 
 def install_app(item_id: str, is_update = False, force_install = False) -> bool:
@@ -76,7 +86,9 @@ def main():
 
             itunes_info = MacApp(trackId)
             current_price = itunes_info.get_price()
-            if current_price == 0.0:
+            min_version_required = itunes_info.min_version()
+
+            if current_price == 0.0 and min_version_required and min_version_required != "10.13":
                 # Attempt to install free app
                 success = install_app(trackId, force_install=args.force_install)
                 if not success:
