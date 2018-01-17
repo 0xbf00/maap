@@ -78,7 +78,7 @@ def main():
             current_price = itunes_info.get_price()
             if current_price == 0.0:
                 # Attempt to install free app
-                success = install_app(trackId, force_install=args.force)
+                success = install_app(trackId, force_install=args.force_install)
                 if not success:
                     logger.info("Unable to install app with trackId {}".format(trackId))
 
