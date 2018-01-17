@@ -121,6 +121,8 @@ def main():
                         help='Path to directory containing summaries (-> appxtractor) of previously installed apps.')
     parser.add_argument('--itunes-dump', required=True,
                         help='a recent JSONLINES dump of the Mac App Store app catalog.')
+    parser.add_argument('--output', required=True,
+                        help="Output file. Will contain every app it on a new line.")
     parser.add_argument('--updates-only', dest='updates_only', default=False, action='store_true',
                         help='Only update / redownload newer versions of already existing / purchased apps.')
     parser.add_argument('--new-only', dest='new_only', default=False, action='store_true',
@@ -142,6 +144,13 @@ def main():
     apps_to_update = identify_updates_available(local_infos, itunes_infos)
 
     logger.info("Identified {} new apps and {} updates available.".format(len(new_apps), len(apps_to_update)))
+
+    with open(args.output, "w") as outfile:
+        for app in new_apps:
+            outfile.write("{}\n".format(app))
+
+        for app in apps_to_update:
+            outfile.write("{}\n".format(app))
 
 
 if __name__ == "__main__":

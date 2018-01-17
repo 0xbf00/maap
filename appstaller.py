@@ -71,6 +71,9 @@ def main():
     with open(args.apps) as input:
         for trackId in input:
             trackId = trackId.strip()
+            if trackId == "":
+                continue
+
             itunes_info = MacApp(trackId)
             current_price = itunes_info.get_price()
             if current_price == 0.0:
