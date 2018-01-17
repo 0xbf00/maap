@@ -67,6 +67,8 @@ def install_app(item_id: str, is_update = False, force_install = False) -> bool:
 
     logger.info(mas_log)
 
+    return "Installed" in mas_log
+
 
 def main():
     parser = argparse.ArgumentParser(description='Download apps from the Mac App Store.')
