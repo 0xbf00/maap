@@ -122,7 +122,7 @@ def main():
     parser.add_argument('--itunes-dump', required=True,
                         help='a recent JSONLINES dump of the Mac App Store app catalog.')
     parser.add_argument('--output', required=True,
-                        help="Output file. Will contain every app it on a new line.")
+                        help="Output files (one ending with .new_apps, one with .updates). Will contain every app it on a new line.")
     parser.add_argument('--updates-only', dest='updates_only', default=False, action='store_true',
                         help='Only update / redownload newer versions of already existing / purchased apps.')
     parser.add_argument('--new-only', dest='new_only', default=False, action='store_true',
@@ -145,10 +145,11 @@ def main():
 
     logger.info("Identified {} new apps and {} updates available.".format(len(new_apps), len(apps_to_update)))
 
-    with open(args.output, "w") as outfile:
+    with open(args.output + ".new_apps", "w") as outfile:
         for app in new_apps:
             outfile.write("{}\n".format(app))
 
+    with open(args.output + ".updates", "w") as outfile:
         for app in apps_to_update:
             outfile.write("{}\n".format(app))
 
