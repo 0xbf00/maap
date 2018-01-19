@@ -108,7 +108,7 @@ def main():
                 if len(successes) >= 5 and not any(successes[-5:]):
                     logger.error("Failed to install apps for five consecutive times. Stopping.")
                     break
-                time.sleep(5)
+            time.sleep(5)
 
     logger.info("Installing and downloading updates.")
     with open(args.updates) as input:
