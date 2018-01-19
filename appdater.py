@@ -12,6 +12,7 @@ import os.path
 import os
 import argparse
 import jsonlines
+import datetime
 
 logger = create_logger('appdater')
 
@@ -90,9 +91,14 @@ def identify_new_apps(result_infos, itunes_infos):
     return new_apps
 
 
-def identify_updates_available(result_infos, itunes_infos):
+def identify_updates_available(result_infos, itunes_infos, updates_since = None):
     """Identify previously purchased apps for which an update is available.
-    Return the trackId (used by the `mas` tool) for each app in a list."""
+    Return the trackId (used by the `mas` tool) for each app in a list.
+
+    Since the version parameter returned by the iTunes API does not necessarily correspond
+    with the latest version per the Info.plist, a more reliable way to filter results is
+    to also provide a date `updates_since`, which further filters results. If such a date is
+    not specified, the results _will_ contain versions that have already been installed."""
 
     # List of apps for which an update is available
     updates_avail = list()
@@ -105,7 +111,15 @@ def identify_updates_available(result_infos, itunes_infos):
             curr_version = itunes_info["version"]
 
             if curr_version not in analysed_versions:
-                updates_avail.append(itunes_info["trackId"])
+                # Further filter by time of release (see above for reasoning!)
+                if updates_since and "currentVersionReleaseDate" in itunes_info:
+                    version_release_data = datetime.datetime.strptime(itunes_info["currentVersionReleaseDate"],
+                                                                      "%Y-%m-%dT%H:%M:%SZ")
+                    if version_release_data >= updates_since:
+                        updates_avail.append(itunes_info["trackId"])
+                else:
+                    logger.info("Could not filter by time because either `updates_since` not provided or iTunes dump incomplete.")
+                    updates_avail.append(itunes_info["trackId"])
         else:
             logger.info("Locally installed app {} could not be found in the most recent iTunes dump.".format(bundleId))
             continue
@@ -141,7 +155,7 @@ def main():
     itunes_infos = infos_from_itunes_dump(args.itunes_dump)
 
     new_apps = identify_new_apps(local_infos, itunes_infos)
-    apps_to_update = identify_updates_available(local_infos, itunes_infos)
+    apps_to_update = identify_updates_available(local_infos, itunes_infos, updates_since=datetime.datetime(2018, 1, 17))
 
     logger.info("Identified {} new apps and {} updates available.".format(len(new_apps), len(apps_to_update)))
 
