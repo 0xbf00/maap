@@ -8,6 +8,7 @@ After appdater runs, appxtractor can be run again to extract information from ne
 """
 
 from misc.logger import create_logger
+from misc.date_utils import Date
 import os.path
 import os
 import argparse
@@ -155,7 +156,10 @@ def main():
     itunes_infos = infos_from_itunes_dump(args.itunes_dump)
 
     new_apps = identify_new_apps(local_infos, itunes_infos)
-    apps_to_update = identify_updates_available(local_infos, itunes_infos, updates_since=datetime.datetime(2018, 1, 17))
+    apps_to_update = identify_updates_available(local_infos, itunes_infos,
+                                                updates_since=Date.today() - 2) # Check for results in the last two days,
+                                                                                # to account for incorrect / missing data
+                                                                                # in the intermittent dumps
 
     logger.info("Identified {} new apps and {} updates available.".format(len(new_apps), len(apps_to_update)))
 
