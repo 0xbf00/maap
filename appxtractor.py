@@ -188,7 +188,6 @@ def main():
                     logger=logger,
                     output=args.output)
 
-
     logger.info("appxtractor stopping")
 
 
