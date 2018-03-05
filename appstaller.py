@@ -43,12 +43,13 @@ class MacApp:
                 else:
                     logger.info("API response does not contain price attribute. Skipping.")
             else:
-                logger.info("No results for API request. Skipping.")
+                logger.info("No results for API request for itemID {}. Skipping.".format(self.itemID))
 
         return -1.0
 
     def min_version(self):
-        assert(self.api_result != None)
+        if self.api_result is None:
+            return None
 
         if "minimumOsVersion" in self.api_result:
             return self.api_result["minimumOsVersion"]
