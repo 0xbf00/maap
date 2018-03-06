@@ -57,6 +57,15 @@ class Application(Bundle):
         """
         return self.app_store_receipt_exists()
 
+    def is_sandboxed(self):
+        """Check if an app is sandboxed by the App Sandbox. This does not
+        check whether the app itself voluntarily activates a sandbox and only
+        returns true if it is forced into a sandbox."""
+        if not self.has_entitlements():
+            return False
+        else:
+            return "com.apple.security.app-sandbox" in self.entitlements()
+
     @staticmethod
     def supported_types(self):
         return [BundleType.APPLICATION]
