@@ -3,7 +3,10 @@ import lief
 from binary.common import extract_rpaths, resolve_library_path, load_cmd_is_weak
 
 import os.path
+import subprocess
+import tempfile
 
+from misc import plist
 
 class Binary:
     def __init__(self, filepath, loader_path = None, executable_path = None):
@@ -20,6 +23,24 @@ class Binary:
 
         except lief.bad_file:
             raise ValueError("Executable not found")
+
+    @classmethod
+    def get_entitlements(cls, filepath) -> dict:
+        """Uses jtool to extract the entitlements from a target binary.
+        Returns an empty dictionary if no entitlements were found or an error occurred."""
+        JTOOL_PATH = os.path.join(os.path.dirname(__file__), "../extern/jtool")
+        assert (os.path.exists(JTOOL_PATH))
+
+        with tempfile.NamedTemporaryFile() as outfile:
+            return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
+                                      stdin=subprocess.DEVNULL, stdout=outfile,
+                                      stderr=subprocess.DEVNULL)
+
+            if return_value.returncode != 0:
+                return dict()
+            else:
+                return plist.parse_resilient(outfile.name)
+
 
     def application_libraries(self):
         """Return only the libraries / frameworks that are shipped as part of the

@@ -66,3 +66,17 @@ class TestBinary(unittest.TestCase):
         for linked_lib in linked_libs:
             self.assertIn(linked_lib, calculator_expected_libraries, "Found library not present in static information")
 
+    def test_get_entitlements(self):
+        # Assuming the entitlements in system apps do not change much.
+        computed_entitlements = bin.Binary.get_entitlements("/Applications/Calculator.app/Contents/MacOS/Calculator")
+        desired_entitlements = {
+            "com.apple.security.app-sandbox": True,
+            "com.apple.security.files.user-selected.read-write": True,
+            "com.apple.security.network.client": True,
+            "com.apple.security.print": True
+        }
+
+        self.assertEqual(desired_entitlements, computed_entitlements)
+
+        # So far, /bin/ls contains no entitlements
+        self.assertEqual(bin.Binary.get_entitlements("/bin/ls"), dict())
