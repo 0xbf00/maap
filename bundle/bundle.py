@@ -151,6 +151,18 @@ class Bundle(abc.ABC):
 
         return self.info_dict
 
+    def has_entitlements(self):
+        return self.entitlements() != dict()
+
+    def entitlements(self) -> dict:
+        from binary.binary import Binary
+
+        try:
+            exe_path = self.executable_path()
+            return Binary.get_entitlements(exe_path)
+        except NotImplementedError:
+            return dict()
+
     @abc.abstractmethod
     def info_dictionary_path(self) -> str:
         raise NotImplementedError()
