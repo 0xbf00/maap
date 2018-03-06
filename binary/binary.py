@@ -31,14 +31,44 @@ class Binary:
         JTOOL_PATH = os.path.join(os.path.dirname(__file__), "../extern/jtool")
         assert (os.path.exists(JTOOL_PATH))
 
-        with tempfile.NamedTemporaryFile() as outfile:
-            return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
-                                      stdin=subprocess.DEVNULL, stdout=outfile,
-                                      stderr=subprocess.DEVNULL)
+        with tempfile.NamedTemporaryFile() as resfile:
+            # env = os.environ.copy()
+            # Workaround: jtool has a bug that results in incorrect entitlement output
+            # for when binary plists are used as entitlements.
+            # For more details, see http://newosxbook.com/forum/viewtopic.php?f=3&t=19374
+            #
+            # otool still returns correct output, but unfortunately, we have to
+            # remove the first 8 bytes from otool's output, because otool for some
+            # reason always writes a useless header into its output, which hinders normal
+            # plist decoding.
+            # env["ARCH"] = "x86_64"
+            #
+            # return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
+            #                           stdin=subprocess.DEVNULL, stdout=outfile,
+            #                           stderr=subprocess.DEVNULL, env = env)
+            #
+            #
+            # if return_value.returncode != 0:
+            #     return dict()
+            # else:
+            #     return plist.parse_resilient(outfile.name)
 
-            if return_value.returncode != 0:
+            return_value = subprocess.run(["/usr/bin/codesign", "-d", "--entitlements", "-", filepath],
+                                          stdin=subprocess.DEVNULL, stdout=resfile,
+                                          stderr=subprocess.DEVNULL)
+            assert(return_value.returncode == 0)
+
+            resfile.seek(0)
+            contents = resfile.read()
+
+            if len(contents) <= 8:
                 return dict()
-            else:
+
+            # Remove the first 8 bytes (see above)
+            with tempfile.NamedTemporaryFile() as outfile:
+                outfile.write(contents[8:])
+                outfile.flush()
+
                 return plist.parse_resilient(outfile.name)
 
 
