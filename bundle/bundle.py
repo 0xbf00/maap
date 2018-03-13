@@ -151,6 +151,18 @@ class Bundle(abc.ABC):
 
         return self.info_dict
 
+    def version(self) -> str:
+        info_dict = self.info_dictionary()
+
+        version = None
+
+        if "CFBundleShortVersionString" in info_dict:
+            version = info_dict["CFBundleShortVersionString"]
+        elif "CFBundleVersion" in info_dict():
+            version = info_dict["CFBundleVersion"]
+
+        return version
+
     def has_entitlements(self):
         return self.entitlements() != dict()
 
@@ -174,9 +186,7 @@ class Bundle(abc.ABC):
 
     def __str__(self):
         type = self.__class__.__name__
-        version = "v" + self.info_dictionary()["CFBundleShortVersionString"] \
-            if "CFBundleShortVersionString" in self.info_dictionary() \
-            else "vUNKOWN"
+        version = "v" + self.version()
         identifier = self.info_dictionary()["CFBundleIdentifier"] \
             if "CFBundleIdentifier" in self.info_dictionary() \
             else "unknown.bundle"

@@ -59,11 +59,7 @@ def folder_for_app(results_dir : str, app : Bundle) -> str:
     Note that this function _does not_ touch the filesystem.
     Therefore, no directories are created as part of this functionality"""
     app_bundle_id = app.bundle_identifier()
-    app_version = None
-    if "CFBundleShortVersionString" in app.info_dictionary():
-        app_version = app.info_dictionary()["CFBundleShortVersionString"]
-    elif "CFBundleVersion" in app.info_dictionary():
-        app_version = app.info_dictionary()["CFBundleVersion"]
+    app_version = app.version()
 
     if not app_version:
         return None
