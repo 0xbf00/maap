@@ -64,7 +64,8 @@ class Application(Bundle):
         if not self.has_entitlements():
             return False
         else:
-            return "com.apple.security.app-sandbox" in self.entitlements()
+            return "com.apple.security.app-sandbox" in self.entitlements() \
+                   and self.entitlements()["com.apple.security.app-sandbox"]
 
     @staticmethod
     def supported_types(self):
