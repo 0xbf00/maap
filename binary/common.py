@@ -85,43 +85,6 @@ def extract_rpaths(binary,
     return rpaths
 
 
-def bundle_from_binary(bin_path : str) -> Bundle:
-    """Finds the bundle that contains a specific binary.
-
-    Throws a ValueError if the supplied binary is
-        a) not a binary
-        b) does not exist
-
-    Returns
-        On success: The bundle
-        On failure: None
-    """
-    # Binary has to be valid
-    if not (os.path.exists(bin_path) and lief.is_macho(bin_path)):
-        raise ValueError("Invalid executable specified")
-
-    containing_dir = os.path.dirname(bin_path)
-    while containing_dir != "/":
-        # Potential bundle found
-        if Bundle.is_bundle(containing_dir):
-            bun = Bundle.make(containing_dir)
-            if not os.path.isfile(bun.executable_path()):
-                # File specified in Info.plist does not exist.
-                # This sometimes happens for applications with incorrectly
-                # configured frameworks. In these cases, as a workaround,
-                # we simply check whether the filepath of the current bundle
-                # is contained in the `bin_path`.
-                if os.path.commonpath([bun.filepath, bin_path]) == bun.filepath:
-                    return bun
-            elif fs.is_same_file(bun.executable_path(), bin_path):
-                return bun
-
-        # Move up one level
-        containing_dir = os.path.dirname(containing_dir)
-
-    return None
-
-
 def load_cmd_is_weak(lc) -> bool:
     """Checks whether the load command `lc` is a LC_LOAD_WEAK_DYLIB command
     that is allowed to fail

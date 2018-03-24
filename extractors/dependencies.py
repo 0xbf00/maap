@@ -61,7 +61,7 @@ class DependenciesExtractor(AbstractExtractor):
 
         app_dependencies = app.executable().application_libraries()
         for dependency in app_dependencies:
-            dependency_bundle = binary.common.bundle_from_binary(dependency)
+            dependency_bundle = Bundle.from_binary(dependency)
             # Relative path component from the underlying app to the dependency.
             dependency_rel = fs.path_remove_prefix(dependency, app.filepath + "/")
 

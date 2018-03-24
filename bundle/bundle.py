@@ -7,6 +7,7 @@ import sys
 
 from typing import List
 import misc.plist as plist
+import misc.filesystem as fs
 
 from bundle.types import BundleType
 
@@ -55,6 +56,43 @@ class Bundle(abc.ABC):
             return GenericBundle(filepath)
         else:
             raise NotImplementedError
+
+    @staticmethod
+    def from_binary(filepath : str):
+        """Finds the bundle that contains a specific binary.
+
+        Throws a ValueError if the supplied binary is
+            a) not a binary
+            b) does not exist
+
+        Returns
+            On success: The bundle
+            On failure: None
+        """
+        # Binary has to be valid
+        if not os.path.exists(filepath):
+            raise ValueError("Invalid executable specified")
+
+        containing_dir = os.path.dirname(filepath)
+        while containing_dir != "/":
+            # Potential bundle found
+            if Bundle.is_bundle(containing_dir):
+                bun = Bundle.make(containing_dir)
+                if not os.path.isfile(bun.executable_path()):
+                    # File specified in Info.plist does not exist.
+                    # This sometimes happens for applications with incorrectly
+                    # configured frameworks. In these cases, as a workaround,
+                    # we simply check whether the filepath of the current bundle
+                    # is contained in the `bin_path`.
+                    if os.path.commonpath([bun.filepath, filepath]) == bun.filepath:
+                        return bun
+                elif fs.is_same_file(bun.executable_path(), filepath):
+                    return bun
+
+            # Move up one level
+            containing_dir = os.path.dirname(containing_dir)
+
+        return None
 
     @staticmethod
     def normalize_path(filepath : str) -> str:
