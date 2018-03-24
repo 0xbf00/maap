@@ -6,7 +6,7 @@ import subprocess
 def all_apps(at = "/Applications", mas_only = False):
     """Generator for all applications installed in a certain folder.
     Optionally: Returns only MAS apps"""
-    all_entries = os.listdir(at)
+    all_entries = [os.path.join(at, x) for x in os.listdir(at)]
     filtered_entries = filter(lambda x: x.endswith(".app"), all_entries)
 
     for entry in filtered_entries:
@@ -15,6 +15,8 @@ def all_apps(at = "/Applications", mas_only = False):
                 app_bundle = Bundle.make(entry)
                 if app_bundle.is_mas_app():
                     yield entry
+            except:
+                continue
         else:
             yield entry
 
