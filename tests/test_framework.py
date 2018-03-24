@@ -18,3 +18,11 @@ class TestFramework(unittest.TestCase):
                          "/System/Library/Frameworks/DVDPlayback.framework/Versions/A/DVDPlayback")
         self.assertEqual(self.framework.info_dictionary_path(),
                          "/System/Library/Frameworks/DVDPlayback.framework/Versions/A/Resources/Info.plist")
+
+    def test_linked_libraries(self):
+        framework_bin = self.framework.executable()
+        linked_libraries = framework_bin.linked_libraries()
+        application_libraries = framework_bin.application_libraries()
+
+        self.assertTrue(len(linked_libraries) == 23)
+        self.assertTrue(len(application_libraries) == 0)

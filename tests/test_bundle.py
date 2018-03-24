@@ -58,7 +58,7 @@ class TestBundle(unittest.TestCase):
         self.assertEqual("/Applications/iTunes.app/Contents/Frameworks/iPodUpdater.framework",
                          sub_frameworks[0].filepath)
 
-    def test_sub_subles(self):
+    def test_sub_bundles(self):
         app = Bundle.make("/Applications/iTunes.app")
         sub_bundle_paths = [x.filepath for x in app.sub_bundles()]
 
