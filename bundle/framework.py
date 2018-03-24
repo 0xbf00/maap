@@ -29,6 +29,15 @@ class Framework(Bundle):
 
         return self.absolute_path(os.path.join(EXECUTABLE_DIR, executable_name))
 
+    def linker_paths(self):
+        # Frameworks inherit the executable path from the binary that is
+        # loading them. At this point, we don't know which binary is loading
+        # us (in general though, frameworks do not necessarily _need_ a single
+        # containing application and therefore often don't need the @executable_path
+        exe_path = None
+        loader_path = self.absolute_path(EXECUTABLE_DIR)
+        return (exe_path, loader_path)
+
     def app_store_receipt_path(self):
         raise NotImplementedError
 

@@ -1,8 +1,6 @@
 from bundle.bundle import Bundle
 from bundle.types import BundleType
 
-from binary.binary import Binary
-
 import os.path
 
 APP_BASE_PATH  = "Contents/"
@@ -26,14 +24,15 @@ class Application(Bundle):
     def info_dictionary_path(self):
         return self.absolute_path(INFO_DICT_PATH)
 
-    def executable(self):
-        if hasattr(self, 'binary'):
-            return self.binary
+    def linker_paths(self):
+        """Returns a tuple (executable_path, loader_path) which are used
+        to expand @loader_path and @executable_path in load commands appropriately"""
 
-        self.binary = Binary(self.executable_path(),
-                             loader_path = self.absolute_path(EXECUTABLE_DIR),
-                             executable_path = self.absolute_path(EXECUTABLE_DIR))
-        return self.binary
+        # For applications, loader and executable paths are identical.
+        exe_path = self.absolute_path(EXECUTABLE_DIR)
+        loader_path = exe_path
+
+        return (exe_path, loader_path)
 
     def executable_path(self) -> str:
         info_dict = self.info_dictionary()

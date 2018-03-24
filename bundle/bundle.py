@@ -133,6 +133,25 @@ class Bundle(abc.ABC):
     def executable_path(self) -> str:
         raise NotImplementedError()
 
+    def executable(self):
+        from binary.binary import Binary
+
+        if hasattr(self, 'binary'):
+            return self.binary
+
+        linker_paths = self.linker_paths()
+        self.binary = Binary(self.executable_path(),
+                             executable_path=linker_paths[0],
+                             loader_path=linker_paths[1])
+        return self.binary
+
+
+    @abc.abstractmethod
+    def linker_paths(self):
+        """Shall return tuple (@executable_path, @loader_path) that are used
+        to resolve loaded libraries and frameworks."""
+        raise NotImplementedError
+
     def app_store_receipt_exists(self) -> bool:
         return os.path.isfile(self.app_store_receipt_path())
 

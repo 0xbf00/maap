@@ -15,6 +15,9 @@ class GenericBundle(Application):
     def is_mas_app(self):
         raise NotImplementedError
 
+    def linker_paths(self):
+        raise NotImplementedError
+
     @staticmethod
     def supported_types(self):
         return [BundleType.GENERIC_BUNDLE]

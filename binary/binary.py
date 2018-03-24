@@ -13,6 +13,7 @@ class Binary:
         try:
             if not lief.is_macho(filepath):
                 raise ValueError("Executable has wrong format")
+            self.filepath = filepath
             self.containing_folder = os.path.dirname(filepath)
             self.parsed_binary = lief.parse(filepath)
 
@@ -86,7 +87,7 @@ class Binary:
         if application_path.endswith("/Contents/MacOS"):
             application_path = application_path[:-len("/Contents/MacOS")]
 
-        return list(filter(lambda x: x.startswith(application_path), all_libraries))
+        return list(filter(lambda x: x.startswith(application_path) and x != self.filepath, all_libraries))
 
     def linked_libraries(self):
         assert(self.parsed_binary)
