@@ -5,6 +5,7 @@ import plistlib
 
 from bundle.bundle import Bundle
 import misc.filesystem as fs
+import subprocess
 
 import os.path
 
@@ -21,6 +22,7 @@ RPATH_DEFAULT_PATHS = [
     "/lib",
     os.path.join(os.path.expanduser("~"), "lib")
 ]
+
 
 def extract_embedded_info(binary) -> dict:
     """Returns the contents of the section
@@ -128,3 +130,24 @@ def load_cmd_is_weak(lc) -> bool:
     raw_data = lc.data
     # 0x18 is the identifier for LC_LOAD_WEAK_DYLIB
     return raw_data[0] == 0x18
+
+
+def imported_symbols(bin_path : str) -> List[str]:
+    """Compute the imported symbols for a binary. Currently uses the nm command line
+    tool and parses its output, as this is significantly faster for large files than using
+    lief and its built-in functionality"""
+
+    # Execute the nm process
+    cmd = ["/usr/bin/nm",
+           "-g", # Display only global (external) symbols
+           "-j", # Display the symbol only, eases parsing for us
+           bin_path]
+
+    try:
+        output = subprocess.check_output(cmd, stderr = subprocess.DEVNULL)
+        result = list(map(lambda x: x.decode(encoding = "utf8"),
+                          output.splitlines()))
+        return result
+    except subprocess.CalledProcessError:
+        # On error, simply return empty results
+        return []
