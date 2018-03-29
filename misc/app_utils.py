@@ -3,6 +3,8 @@ import os
 from bundle.bundle import Bundle
 import subprocess
 import tempfile
+from binary.binary import Binary
+from extern.tools import tool_named
 
 def all_apps(at = "/Applications", mas_only = False):
     """Generator for all applications installed in a certain folder.
@@ -63,20 +65,54 @@ def container_for_app(app):
         return None
 
 
+def _entitlements_can_be_parsed(app_bundle):
+    """Private helper function.
+    Checks whether an application's entitlements can be parsed by libsecinit.
+    We only check part of the process, namely the parsing of entitlements via
+    xpc_create_from_plist. See also: extern/xpc_vuln_checker.c
+    """
+    assert isinstance(app_bundle, Bundle)
+
+    # No entitlements, no problem
+    # If the app contains no entitlements, entitlement validation
+    # cannot fail.
+    if not app_bundle.has_entitlements():
+        return True
+
+    exe_path = app_bundle.executable_path()
+    raw_entitlements = Binary.get_entitlements(exe_path, raw = True)
+
+    # Call the local xpc_vuln_checker program that does the actual checking.
+    return_value = subprocess.run([tool_named("xpc_vuln_checker")], input=raw_entitlements)
+
+    if return_value.returncode == 1:
+        return False
+
+    return True
+
+
 def init_sandbox(app_bundle, logger, force_initialisation = False):
     # In order to patch and re-generate the sandbox profile used by an application,
     # we needs its Container metdata, which is generated during profile generation.
     # As such, we first start the app, let the sandbox do its job, then exit.
     # Thankfully, Apple provides an environment variable that does just that.
+    if not _entitlements_can_be_parsed(app_bundle):
+        return False
+
     init_sandbox_environ = {**os.environ, 'APP_SANDBOX_EXIT_AFTER_INIT': str(1)}
 
     app_container = container_for_app(app_bundle)
     if app_container is not None and not force_initialisation:
-        logger.info("Container directory already existed. Skipping sandbox initialisation.")
+        if logger:
+            logger.info("Container directory already existed. Skipping sandbox initialisation.")
         return True
 
-    logger.info("Starting process {} to initialize sandbox.".format(app_bundle.executable_path()))
-    process = subprocess.Popen([app_bundle.executable_path()], env = init_sandbox_environ)
+    if logger:
+        logger.info("Starting process {} to initialize sandbox.".format(app_bundle.executable_path()))
+    process = subprocess.Popen([app_bundle.executable_path()],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL,
+                               env = init_sandbox_environ)
 
     # Sandbox initialisation should be almost instant. If the application is still
     # running after a couple of seconds, the sandbox failed to initialise.
@@ -85,18 +121,20 @@ def init_sandbox(app_bundle, logger, force_initialisation = False):
         process.wait(10)
     except subprocess.TimeoutExpired:
         process.kill()
-        logger.error("Sandbox was not initialised successfully for executable at {}. Skipping.".format(
-            app_bundle.executable_path())
-        )
+        if logger:
+            logger.error("Sandbox was not initialised successfully for executable at {}. Skipping.".format(
+                app_bundle.executable_path())
+            )
         return False
 
     # Check that there now is an appropriate container
     if container_for_app(app_bundle) is None:
-        logger.info(
-            "Sandbox initialisation for executable {} succeeded but no appropriate container metadata was created.".format(
-                app_bundle.executable_path()
+        if logger:
+            logger.info(
+                "Sandbox initialisation for executable {} succeeded but no appropriate container metadata was created.".format(
+                    app_bundle.executable_path()
+                )
             )
-        )
         return False
 
     return True
