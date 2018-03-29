@@ -2,6 +2,7 @@
 import os
 from bundle.bundle import Bundle
 import subprocess
+import tempfile
 
 def all_apps(at = "/Applications", mas_only = False):
     """Generator for all applications installed in a certain folder.
@@ -115,3 +116,37 @@ def run_process(executable, duration, stdout_file = subprocess.DEVNULL, stderr_f
         process.kill()
 
     return process_pid
+
+
+def get_sandbox_rules(app_bundle, result_format = "scheme", patch = False):
+    """Returns the final sandboxing ruleset for an application. Optionally
+    also patches the result so that all allow decisions are logged to the
+    syslog.
+
+    :param result_format The format to return. Supported are \"scheme\" and \"json\"
+    :param patch Whether to patch the resulting profile. Patching a profile results
+    in a profile that logs all allowed decisions.
+    :returns Raw bytes of sandbox profile."""
+
+    sbpl_base_dir = os.path.join(os.path.dirname(__file__), "../../sbpl")
+    assert os.path.exists(sbpl_base_dir)
+    sbpl_tool = os.path.join(sbpl_base_dir, "build/sbpl")
+    application_base_profile = os.path.join(sbpl_base_dir, "application.sb")
+    assert os.path.exists(sbpl_tool)
+    assert os.path.exists(application_base_profile)
+
+    if result_format != "scheme" and result_format != "json":
+        raise ValueError("Invalid format specified.")
+
+    try:
+        cmd = [sbpl_tool,
+               "--" + result_format,
+               "--bundle-id", app_bundle.bundle_identifier(),
+               "--profile", application_base_profile]
+        if patch:
+            cmd.append("--patch")
+
+        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, cwd=sbpl_base_dir)
+        return result
+    except subprocess.CalledProcessError:
+        return None
