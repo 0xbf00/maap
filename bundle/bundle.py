@@ -39,6 +39,8 @@ class Bundle(abc.ABC):
 
         normalized_path = Bundle.normalize_path(filepath)
         bundle_type = BundleType.type_for_bundle(normalized_path)
+        if not os.path.exists(normalized_path):
+            raise ValueError("Invalid filepath specified.")
 
         if bundle_type == BundleType.APPLICATION:
             return Application(filepath)

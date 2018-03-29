@@ -37,7 +37,7 @@ class DependenciesExtractor(AbstractExtractor):
         """Extracts the required keys (CFBundleIdentifier and CFBundleShortVersionString / CFBundleVersion)
         from the info.plist supplied as a dictionary to this method.
 
-        In case only a subset of this information is provided, only a subset is retunred"""
+        In case only a subset of this information is provided, only a subset is returned"""
         assert(isinstance(info, dict))
 
         result = dict()

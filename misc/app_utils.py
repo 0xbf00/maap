@@ -135,6 +135,9 @@ def get_sandbox_rules(app_bundle, result_format = "scheme", patch = False):
     assert os.path.exists(sbpl_tool)
     assert os.path.exists(application_base_profile)
 
+    if container_for_app(app_bundle) is None:
+        raise ValueError("Container for application does not exist.")
+
     if result_format != "scheme" and result_format != "json":
         raise ValueError("Invalid format specified.")
 
