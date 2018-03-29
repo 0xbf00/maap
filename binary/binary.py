@@ -26,51 +26,32 @@ class Binary:
             raise ValueError("Executable not found")
 
     @classmethod
-    def get_entitlements(cls, filepath) -> dict:
-        """Uses jtool to extract the entitlements from a target binary.
-        Returns an empty dictionary if no entitlements were found or an error occurred."""
+    def get_entitlements(cls, filepath, raw = False):
+        """
+        Uses jtool to extract the entitlements from a target binary.
+        Returns an empty dictionary if no entitlements were found or an error occurred.
+        If the caller requests raw entitlements, returns a bytestring of the entitlements!
+        """
         JTOOL_PATH = os.path.join(os.path.dirname(__file__), "../extern/jtool")
         assert (os.path.exists(JTOOL_PATH))
 
-        with tempfile.NamedTemporaryFile() as resfile:
-            # env = os.environ.copy()
-            # Workaround: jtool has a bug that results in incorrect entitlement output
-            # for when binary plists are used as entitlements.
-            # For more details, see http://newosxbook.com/forum/viewtopic.php?f=3&t=19374
-            #
-            # otool still returns correct output, but unfortunately, we have to
-            # remove the first 8 bytes from otool's output, because otool for some
-            # reason always writes a useless header into its output, which hinders normal
-            # plist decoding.
-            # env["ARCH"] = "x86_64"
-            #
-            # return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
-            #                           stdin=subprocess.DEVNULL, stdout=outfile,
-            #                           stderr=subprocess.DEVNULL, env = env)
-            #
-            #
-            # if return_value.returncode != 0:
-            #     return dict()
-            # else:
-            #     return plist.parse_resilient(outfile.name)
+        with tempfile.NamedTemporaryFile() as ent_file:
+            env = os.environ.copy()
+            env["ARCH"] = "x86_64"
 
-            return_value = subprocess.run(["/usr/bin/codesign", "-d", "--entitlements", "-", filepath],
-                                          stdin=subprocess.DEVNULL, stdout=resfile,
-                                          stderr=subprocess.DEVNULL)
-            assert(return_value.returncode == 0)
+            return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
+                                      stdin=subprocess.DEVNULL, stdout=ent_file,
+                                      stderr=subprocess.DEVNULL, env = env)
 
-            resfile.seek(0)
-            contents = resfile.read()
-
-            if len(contents) <= 8:
+            if return_value.returncode != 0:
                 return dict()
+            else:
+                if raw:
+                    # Return raw bytes to caller.
+                    ent_file.seek(0)
+                    return ent_file.read()
 
-            # Remove the first 8 bytes (see above)
-            with tempfile.NamedTemporaryFile() as outfile:
-                outfile.write(contents[8:])
-                outfile.flush()
-
-                return plist.parse_resilient(outfile.name)
+                return plist.parse_resilient(ent_file.name)
 
 
     def application_libraries(self):
