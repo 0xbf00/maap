@@ -55,6 +55,8 @@ class VersionSummary:
 
         assert self.bundle_id in self.filepath
         assert os.path.exists(self.filepath)
+        # For a valid app, we at least need the executable.
+        assert self.resource_named("executable.bin") is not None
 
     def release_date(self):
         """The release date of the current version.
@@ -99,7 +101,11 @@ class AppEntry:
         app_bundle_id = self.bundle_id()
 
         for version in available_versions:
-            yield VersionSummary(version, app_bundle_id)
+            try:
+                yield VersionSummary(version, app_bundle_id)
+            except AssertionError:
+                print("{} is not a valid version.".format(version))
+                continue
 
     def bundle_id(self):
         """The bundle id of the current application entry"""
