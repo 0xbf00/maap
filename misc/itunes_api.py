@@ -103,7 +103,7 @@ def lookup_metadata(**kwargs):
     if not kwargs.get('bundleId', False) and not kwargs.get('trackId', False):
         raise ValueError('Invalid usage of lookup metadata function.')
 
-    cached_response = lookup_in_cache(kwargs)
+    cached_response = lookup_in_cache(**kwargs)
     if cached_response:
         return cached_response
 
