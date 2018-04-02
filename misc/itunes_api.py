@@ -2,11 +2,15 @@ import sqlite3
 import requests
 import time
 import json
+import os.path
 
 STORE_CODE = 'de'
 BASE_URL   = 'https://itunes.apple.com/'+STORE_CODE+'/lookup?'
 
-cache_db = sqlite3.connect("api_cache.db")
+cache_db = sqlite3.connect(os.path.join(
+        os.path.dirname(__file__),
+        "api_cache.db")
+)
 cache_db.text_factory = str
 
 t_last_request = None
@@ -75,7 +79,7 @@ def send_request(request_url):
 
     try:
         current_time = int(time.time())
-        if current_time - t_last_request < 5:
+        if t_last_request is not None and current_time - t_last_request < 5:
             time.sleep(5 - (current_time - t_last_request))
         t_last_request = int(time.time())
 
@@ -108,9 +112,9 @@ def lookup_metadata(**kwargs):
         return cached_response
 
     if 'bundleId' in kwargs:
-        parameter_str = 'bundleId=' + kwargs['bundleId']
+        parameter_str = 'bundleId={}'.format(kwargs['bundleId'])
     else:
-        parameter_str = 'id=' + kwargs['trackId']
+        parameter_str = 'id={}'.format(kwargs['trackId'])
 
     request_url = _construct_url(parameter_str)
     result = None
