@@ -7,6 +7,10 @@ import subprocess
 import tempfile
 
 from misc import plist
+from misc.logger import create_logger
+
+logger = create_logger('binary')
+
 
 class Binary:
     def __init__(self, filepath, loader_path = None, executable_path = None):
@@ -85,7 +89,10 @@ class Binary:
                                                         rpaths,
                                                         self.loader_path,
                                                         self.executable_path)
-                    resolved_libs.append(resolved_lib)
+                    if not os.path.exists(resolved_lib):
+                        logger.info('Weak load command resolved to {}, which does not exist.'.format(resolved_lib))
+                    else:
+                        resolved_libs.append(resolved_lib)
                 except ValueError:
                     continue
             else:
@@ -93,6 +100,9 @@ class Binary:
                                                     rpaths,
                                                     self.loader_path,
                                                     self.executable_path)
-                resolved_libs.append(resolved_lib)
+                if not os.path.exists(resolved_lib):
+                    logger.error('Load command resolved to {}, which does not exist.'.format(resolved_lib))
+                else:
+                    resolved_libs.append(resolved_lib)
 
         return resolved_libs
