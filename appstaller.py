@@ -6,61 +6,50 @@ appstaller
 Tool to install (and purchase) apps from the MAS, in an automatic fashion
 """
 
-import json
-import requests
 import time
 import argparse
 
 from os import popen
 
 from misc.logger import create_logger
+import misc.itunes_api as itunes_api
 
 logger = create_logger('appstaller')
 
 
 class MacApp:
-    """The MacApp class wraps common operations such as getting the
-    current price."""
-
+    """
+    The MacApp class wraps common operations such as getting the
+    current price.
+    """
     def __init__(self, itemID: str):
         self.itemID = itemID
-        self.api_result = None
+        # Cache the response so that during app extraction we do not need to query
+        # the iTunes API again.
+        self.api_result = itunes_api.lookup_metadata(trackId = itemID,
+                                                     cache = True)
+        if self.api_result is None:
+            logger.error('Failed to lookup itunes metadata for {}'.format(itemID))
 
     def get_price(self) -> float:
-        """getPrice() uses the iTunes API to retrieve the current price
+        """get_price() uses the iTunes API to retrieve the current price
         of the app. Right now, the german store is hardcoded, although this
         can easily be replaced."""
+        if self.api_result is None:
+            return -1.0
 
-        itunes_url = 'https://itunes.apple.com/de/lookup?id={}'.format(self.itemID)
-        response = requests.get(itunes_url)
-        if response.status_code == 200:
-            obj = json.loads(response.content.decode('utf-8'))
-            if obj["resultCount"] >= 1:
-                app_info = obj["results"][0]
-                self.api_result = app_info
-                if "price" in app_info:
-                    return app_info["price"]
-                else:
-                    logger.info("API response does not contain price attribute. Skipping.")
-            else:
-                logger.info("No results for API request for itemID {}. Skipping.".format(self.itemID))
-
-        return -1.0
+        return self.api_result.get('price', -1.0)
 
     def min_version(self):
         if self.api_result is None:
             return None
 
-        if "minimumOsVersion" in self.api_result:
-            return self.api_result["minimumOsVersion"]
-        else:
-            return None
+        return self.api_result.get('minimumOsVersion')
 
 
 def install_app(item_id: str, is_update = False, force_install = False) -> bool:
     logger.info("Attempting to install {}. (As update? {})".format(item_id, is_update))
 
-    command_str = ""
     if is_update:
         command_str = "mas install {}".format(item_id)
     else:
@@ -99,7 +88,7 @@ def main():
             current_price = itunes_info.get_price()
             min_version_required = itunes_info.min_version()
 
-            if current_price == 0.0 and min_version_required and min_version_required != "10.13":
+            if current_price == 0.0 and min_version_required and not min_version_required.startswith('10.13'):
                 # Attempt to purchase free app
                 success = install_app(trackId, is_update=False, force_install=False)
                 if not success:
@@ -122,7 +111,7 @@ def main():
             current_price = itunes_info.get_price()
             min_version_required = itunes_info.min_version()
 
-            if current_price == 0.0 and min_version_required and min_version_required != "10.13":
+            if current_price == 0.0 and min_version_required and not min_version_required.startswith('10.13'):
                 # Attempt to install update for previously purchased free app
                 success = install_app(trackId, is_update=True, force_install=True)
                 if not success:
