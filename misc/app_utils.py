@@ -27,7 +27,7 @@ def all_apps(at = "/Applications", mas_only = False):
 def all_sandboxed_apps(at = "/Applications", mas_only = False):
     """Generator for all sandboxed apps.
     Optionally: returns only sandboxed apps from the MAS."""
-    underlying_apps = all_apps(at) if not mas_only else all_mas_apps(at)
+    underlying_apps = all_apps(at, mas_only)
 
     for app in underlying_apps:
         try:

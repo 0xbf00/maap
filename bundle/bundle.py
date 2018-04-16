@@ -71,8 +71,8 @@ class Bundle(abc.ABC):
             On success: The bundle
             On failure: None
         """
-        # Binary has to be valid
-        if not os.path.exists(filepath):
+        # Binary has to be valid file at the very least
+        if not os.path.isfile(filepath):
             raise ValueError("Invalid executable specified")
 
         containing_dir = os.path.dirname(filepath)

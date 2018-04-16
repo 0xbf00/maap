@@ -74,6 +74,12 @@ def _construct_url(param_str):
 
 
 def send_request(request_url):
+    """Send a iTunes API request. The function makes sure not to send too many
+    requests, in order to avoid getting banned by Apple.
+
+    :param request_url The iTunes API request URL.
+    :returns Decoded JSON response object.
+    """
     # Make sure we don't send too many requests.
     global t_last_request
 
@@ -91,6 +97,11 @@ def send_request(request_url):
 
 
 def lookup_in_cache(**kwargs):
+    """Lookup a iTunes API response in the cache.
+
+    :param kwargs Keyword argument. We expect either the key bundleId or the key
+    trackId.
+    :returns Cached API response or None, if no cached response exists."""
     if kwargs.get('no-cached', False):
         return None
 
