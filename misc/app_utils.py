@@ -6,6 +6,7 @@ import tempfile
 from binary.binary import Binary
 from extern.tools import tool_named
 
+
 def all_apps(at = "/Applications", mas_only = False):
     """Generator for all applications installed in a certain folder.
     Optionally: Returns only MAS apps"""

@@ -3,8 +3,9 @@
 import os
 import sqlite3
 import datetime
+from misc.filesystem import project_path
 
-VERSIONS_DB = os.path.abspath(os.path.join(os.path.dirname(__file__), "../scripts/app_versions/versions.db"))
+VERSIONS_DB = project_path("mas_tools/scripts/app_versions/versions.db")
 assert os.path.exists(VERSIONS_DB)
 conn = sqlite3.connect(VERSIONS_DB)
 

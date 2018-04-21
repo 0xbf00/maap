@@ -1,9 +1,11 @@
 """Logging, because almost all my loggers look the same."""
 
 import logging
-import os.path
+import os
 
 LOGGING_DIRECTORY = "logs/"
+if not os.path.exists(LOGGING_DIRECTORY):
+    os.mkdir(LOGGING_DIRECTORY)
 
 def create_logger(logger_name, level = logging.INFO):
     logger = logging.getLogger(logger_name)

@@ -7,8 +7,9 @@ import os.path
 import tempfile
 import subprocess
 import plistlib
+from misc.filesystem import project_path
 
-SANITIZER_PATH = os.path.join(os.path.dirname(__file__), "../extern/plist_sanitizer")
+SANITIZER_PATH = project_path("mas_tools/extern/plist_sanitizer")
 assert(os.path.exists(SANITIZER_PATH))
 
 
