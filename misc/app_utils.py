@@ -141,8 +141,8 @@ def init_sandbox(app_bundle, logger, force_initialisation = False):
 
 
 def run_process(executable, duration, stdout_file = subprocess.DEVNULL, stderr_file = subprocess.DEVNULL):
-    """Executes and runs a process for a certain number of seconds. Then kills the process.
-    Returns the PID of the process"""
+    """Executes and runs a process for a certain number of seconds (or waits until the process
+    exits when duration == None. Otherwise kills the process. Returns the PID of the process"""
 
     process = subprocess.Popen([executable], stdout=stdout_file, stderr=stderr_file)
 
