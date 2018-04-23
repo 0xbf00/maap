@@ -25,16 +25,16 @@ run, each application is examined (though already processed versions are not re-
 is no shared state, apart from the results folder.
 """
 
-import os.path
-
-from bundle.bundle import Bundle
-import extractors.base
+import os
 import shutil
 import functools
-from misc.logger import create_logger
-
 import argparse
 import signal
+
+import extractors.base
+
+from bundle.bundle import Bundle
+from misc.logger import create_logger
 
 
 class SignalIntelligence:

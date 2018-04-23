@@ -20,12 +20,9 @@ Can be used to check
 import misc.logger as logging_utils
 import misc.app_utils as app_utils
 from bundle.bundle import Bundle
-from binary.binary import Binary
 from extern.tools import tool_named
 
-import sys
 import termcolor
-import os
 from typing import List
 import argparse
 import abc
@@ -239,6 +236,7 @@ def run_analyser(analyser_cls, app_bundle, produce_text = False):
         print(analyser_cls.formatted_result(local_result))
 
     return success, description, local_result
+
 
 def analyse_app(app_path, produce_text = False):
     """
