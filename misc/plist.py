@@ -13,7 +13,7 @@ SANITIZER_PATH = project_path("mas_tools/extern/plist_sanitizer")
 assert(os.path.exists(SANITIZER_PATH))
 
 
-def parse_resilient(filepath : str) -> dict:
+def parse_resilient(filepath: str) -> dict:
     """Parse a PLIST file.
 
     Compared to plistlib's functionality, this function tries to recover on error.
@@ -26,7 +26,7 @@ def parse_resilient(filepath : str) -> dict:
     try:
         with open(filepath, "rb") as plistFile:
             return plistlib.load(plistFile)
-    except:
+    except plistlib.InvalidFileException:
         with tempfile.TemporaryDirectory() as tempdir:
             tempfile_out = os.path.join(tempdir, "Info-new.plist")
             return_value = subprocess.run([SANITIZER_PATH, filepath, tempfile_out],

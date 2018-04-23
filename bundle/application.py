@@ -1,4 +1,4 @@
-from bundle.bundle import Bundle
+from bundle.bundle import Bundle, InvalidBundle
 from bundle.types import BundleType
 
 import os.path
@@ -15,8 +15,10 @@ BUNDLE_IDENTIFIER_KEY = "CFBundleIdentifier"
 class Application(Bundle):
     def __init__(self, filepath):
         super(Application, self).__init__(filepath)
-        assert(BUNDLE_IDENTIFIER_KEY in self.info_dictionary())
-        assert(BUNDLE_EXECUTABLE_KEY in self.info_dictionary())
+        if BUNDLE_IDENTIFIER_KEY not in self.info_dictionary():
+            raise InvalidBundle("CFBundleIdentifier missing.")
+        if BUNDLE_EXECUTABLE_KEY not in self.info_dictionary():
+            raise InvalidBundle("CFBundleExecutable missing.")
 
     def app_store_receipt_path(self):
         return self.absolute_path(RECEIPT_PATH)

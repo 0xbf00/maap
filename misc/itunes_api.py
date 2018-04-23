@@ -16,7 +16,7 @@ cache_db.text_factory = str
 t_last_request = None
 
 
-def cache_api_response(resp, duration):
+def _cache_api_response(resp, duration):
     """Cache a iTunes API response.
 
     :param resp The response to cache
@@ -31,7 +31,7 @@ def cache_api_response(resp, duration):
     cache_db.commit()
 
 
-def delete_expired_responses():
+def _delete_expired_responses():
     current_time = int(time.time())
 
     c = cache_db.cursor()
@@ -39,12 +39,12 @@ def delete_expired_responses():
     cache_db.commit()
 
 
-def get_cached_api_response(**kwargs):
+def _get_cached_api_response(**kwargs):
     """Lookup a response in the cache.
 
     :param kwargs Matching values. This dictionary is used to find a match to the query.
     :returns The json response, if one was found, else None"""
-    delete_expired_responses()
+    _delete_expired_responses()
 
     current_time = int(time.time())
 
@@ -74,12 +74,13 @@ def _construct_url(param_str):
 
 
 def send_request(request_url):
-    """Send a iTunes API request. The function makes sure not to send too many
+    '''
+    Send a iTunes API request. The function makes sure not to send too many
     requests, in order to avoid getting banned by Apple.
 
-    :param request_url The iTunes API request URL.
-    :returns Decoded JSON response object.
-    """
+    :param request_url: The iTunes API request URL.
+    :return: Decoded JSON response object.
+    '''
     # Make sure we don't send too many requests.
     global t_last_request
 
@@ -96,29 +97,39 @@ def send_request(request_url):
         return None
 
 
-def lookup_in_cache(**kwargs):
-    """Lookup a iTunes API response in the cache.
+def _lookup_in_cache(**kwargs):
+    '''
+    Lookup a iTunes API response in the cache.
 
-    :param kwargs Keyword argument. We expect either the key bundleId or the key
+    :param kwargs: Keyword argument. We expect either the key bundleId or the key
     trackId.
-    :returns Cached API response or None, if no cached response exists."""
+    :return: Cached API response or None, if no cached response exists.
+    '''
     if kwargs.get('no-cached', False):
         return None
 
     if kwargs.get('bundleId', None):
-        return get_cached_api_response(bundleId = kwargs.get('bundleId'))
+        return _get_cached_api_response(bundleId = kwargs.get('bundleId'))
 
     if kwargs.get('trackId', None):
-        return get_cached_api_response(trackId = kwargs.get('trackId'))
+        return _get_cached_api_response(trackId = kwargs.get('trackId'))
 
     return None
 
 
 def lookup_metadata(**kwargs):
+    '''
+    Lookup iTunes metadata.
+
+    :param kwargs: Argument dictionary. An example key to use is ``trackId''
+           By specifying the ``cache'' parameter, the result is cached for up to
+           two hours internally.
+    :return: Result dictionary or None, if the lookup failed
+    '''
     if not kwargs.get('bundleId', False) and not kwargs.get('trackId', False):
         raise ValueError('Invalid usage of lookup metadata function.')
 
-    cached_response = lookup_in_cache(**kwargs)
+    cached_response = _lookup_in_cache(**kwargs)
     if cached_response:
         return cached_response
 
@@ -136,6 +147,6 @@ def lookup_metadata(**kwargs):
 
         if kwargs.get('cache', False):
             # By default, cache responses for two hour.
-            cache_api_response(result, 2 * 3600)
+            _cache_api_response(result, 2 * 3600)
 
     return result

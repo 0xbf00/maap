@@ -1,7 +1,7 @@
 from hashlib import sha256
 
 
-def hash_file(algorithm, filepath : str) -> str:
+def hash_file(algorithm, filepath: str) -> str:
     """Returns the hash of a file (using the algorithm ``algorithm``) as denoted by ``filepath``
 
     The algorithm should be an object of the hashlib class. One
@@ -26,7 +26,7 @@ def hash_file(algorithm, filepath : str) -> str:
     return None
 
 
-def sha256_file(filepath : str) -> str:
+def sha256_file(filepath: str) -> str:
     """Returns the SHA256 of a file as denoted by ``filepath``"""
     return hash_file(sha256, filepath)
 

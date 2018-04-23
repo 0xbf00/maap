@@ -3,8 +3,16 @@ import os.path
 from misc.hash import sha256_file
 
 
-def is_same_file(fileA, fileB):
-    if os.path.samefile(fileA, fileB):
+def is_same_file(pathA: str, pathB: str) -> bool:
+    '''
+    Checks whether two files actually refer to the same file.
+    :param pathA: First filepath
+    :param pathB: Second filepath to check against first filepath
+    :return: True, if the files refer to the same file or they have the same contents (as measured
+             by their hash). This is a workaround for a problem where developers duplicate a bunch
+             of application content, because they apparently do not realise how file linking works.
+    '''
+    if os.path.samefile(pathA, pathB):
         return True
     else:
         # For some developers, using the proper Framework format appears to be impossible.
@@ -13,8 +21,8 @@ def is_same_file(fileA, fileB):
         # To detect these cases, a candidate bundle is accepted, if the underlying files
         # are identical (those advertised by the framework and the one returned by our bundle.framework
         # implementation)
-        hash_a = sha256_file(fileA)
-        hash_b = sha256_file(fileB)
+        hash_a = sha256_file(pathA)
+        hash_b = sha256_file(pathB)
         return hash_a == hash_b
 
 

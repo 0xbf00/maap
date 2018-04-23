@@ -13,6 +13,9 @@ from bundle.types import BundleType
 
 import abc
 
+class InvalidBundle(Exception):
+    pass
+
 class Bundle(abc.ABC):
     """The Bundle class models Bundles on macOS.
 
