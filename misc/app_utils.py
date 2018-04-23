@@ -1,105 +1,110 @@
 """Functionality related to listing and querying apps"""
 import os
-from bundle.bundle import Bundle
 import subprocess
-import tempfile
+import logging
+
+from bundle.bundle import Bundle, InvalidBundle
 from binary.binary import Binary
-from extern.tools import tool_named
+from extern.tools import tool_named, call_sbpl
 
 
-def all_apps(at = "/Applications", mas_only = False):
-    """Generator for all applications installed in a certain folder.
-    Optionally: Returns only MAS apps"""
-    all_entries = [os.path.join(at, x) for x in os.listdir(at)]
-    filtered_entries = filter(lambda x: x.endswith(".app"), all_entries)
+def all_apps(at: str = "/Applications", mas_only: bool = False, sandboxed_only: bool = False):
+    '''
+    Returns all apps from a target folder
 
-    for entry in filtered_entries:
-        if mas_only:
-            try:
-                app_bundle = Bundle.make(entry)
-                if app_bundle.is_mas_app():
-                    yield entry
-            except:
-                continue
-        else:
-            yield entry
+    :param at: The base folder where to search for applications
+    :param mas_only: Whether to only consider applications from the Mac App Store
+    :param sandboxed_only: Whether to only return sandboxed applications
+    :return: Filepaths to applications fulfilling the criteria specified
+    '''
+    all_entries = [ os.path.join(at, x) for x in os.listdir(at) if x.endswith(".app") ]
 
-
-def all_sandboxed_apps(at = "/Applications", mas_only = False):
-    """Generator for all sandboxed apps.
-    Optionally: returns only sandboxed apps from the MAS."""
-    underlying_apps = all_apps(at, mas_only)
-
-    for app in underlying_apps:
+    for entry in all_entries:
         try:
-            app_bundle = Bundle.make(app)
-            if app_bundle.is_sandboxed():
-                yield app
-        except:
+            app_bundle = Bundle.make(entry)
+            if mas_only and not app_bundle.is_mas_app():
+                continue
+            if sandboxed_only and not app_bundle.is_sandboxed():
+                continue
+            yield entry
+        except InvalidBundle:
             continue
 
 
 def container_for_app(app):
-    """Returns the container directory used by the application or None if the container does not exist."""
-    try:
-        # Handle code that already has a bundle for an app
-        if isinstance(app, Bundle):
-            app_bundle = app
-        elif isinstance(app, str):
+    '''
+    Returns the container directory used by the application or None if the container does not exist.
+
+    :param app: The app for which to find the container directory. Note that valid arguments are both
+                a filepath to the application and a bundle for that application
+    :return: Filepath to the container or None, if the lookup failed.
+    '''
+    # Handle code that already has a bundle for an app
+    if isinstance(app, Bundle):
+        app_bundle = app
+    elif isinstance(app, str):
+        try:
             app_bundle = Bundle.make(app)
-
-        app_bundleid = app_bundle.bundle_identifier()
-
-        # Verify the container exists.
-        container_path = os.path.join(os.path.expanduser("~/Library/Containers/"), app_bundleid)
-        if not os.path.exists(container_path):
+        except InvalidBundle:
             return None
 
-        # Also verify that the metadata file is present, else the container is invalid and of
-        # no use to other code
-        container_metadata = os.path.join(container_path, "Container.plist")
-        if not os.path.exists(container_path):
-            return None
+    bid = app_bundle.bundle_identifier()
 
-        return container_path
-    except:
+    # Verify the container exists.
+    container_path = os.path.join(os.path.expanduser("~/Library/Containers/"), bid)
+    if not os.path.exists(container_path):
         return None
 
+    # Also verify that the metadata file is present, else the container is invalid and of
+    # no use to other code
+    container_metadata = os.path.join(container_path, "Container.plist")
+    if not os.path.exists(container_path):
+        return None
 
-def _entitlements_can_be_parsed(app_bundle):
-    """Private helper function.
-    Checks whether an application's entitlements can be parsed by libsecinit.
-    We only check part of the process, namely the parsing of entitlements via
-    xpc_create_from_plist. See also: extern/xpc_vuln_checker.c
-    """
-    assert isinstance(app_bundle, Bundle)
+    return container_path
 
+
+def _entitlements_can_be_parsed(app_bundle: Bundle) -> bool:
+    '''
+    Check whether an application's entitlements can be parsed by libsecinit.
+    We only check part of the process, namely the parsing of entitlements via xpc_create_from_plist.
+
+    :param app_bundle: Bundle for which to check whether the entitlements can be parsed
+    :type app_bundle: Bundle
+
+    :return: True, iff the entitlements of the main executable can be parsed, else false.
+    '''
     # No entitlements, no problem
-    # If the app contains no entitlements, entitlement validation
-    # cannot fail.
+    # If the app contains no entitlements, entitlement validation cannot fail.
     if not app_bundle.has_entitlements():
         return True
 
     exe_path = app_bundle.executable_path()
-    raw_entitlements = Binary.get_entitlements(exe_path, raw = True)
+    raw_entitlements = Binary.get_entitlements(exe_path, raw=True)
 
     # Call the local xpc_vuln_checker program that does the actual checking.
     return_value = subprocess.run([tool_named("xpc_vuln_checker")], input=raw_entitlements)
 
-    if return_value.returncode == 1:
-        return False
-
-    return True
+    return return_value.returncode != 1
 
 
-def init_sandbox(app_bundle, logger, force_initialisation = False):
-    # In order to patch and re-generate the sandbox profile used by an application,
-    # we needs its Container metdata, which is generated during profile generation.
-    # As such, we first start the app, let the sandbox do its job, then exit.
-    # Thankfully, Apple provides an environment variable that does just that.
+def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisation: bool = False) -> bool:
+    '''
+    Initialises the sandbox for a particular app bundle.
+
+    :param app_bundle: The App for which to initialise the App Sandbox
+    :param logger: Logger object used to record failure cases
+    :param force_initialisation: Whether to overwrite / start initialisation even if metadata
+           exists that indicates the sandbox has already been initialised
+    :return: Boolean value indicating whether the sandbox was successfully initialised
+             (or was already initialised)
+    '''
+    # Guarding against a few applications that ship with entitlements libsecinit cannot parse.
     if not _entitlements_can_be_parsed(app_bundle):
         return False
 
+    # Super useful environment variable used by libsecinit. If this variable is set, the application
+    # is terminated after its sandbox is initialised.
     init_sandbox_environ = {**os.environ, 'APP_SANDBOX_EXIT_AFTER_INIT': str(1)}
 
     app_container = container_for_app(app_bundle)
@@ -113,7 +118,7 @@ def init_sandbox(app_bundle, logger, force_initialisation = False):
     process = subprocess.Popen([app_bundle.executable_path()],
                                stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL,
-                               env = init_sandbox_environ)
+                               env=init_sandbox_environ)
 
     # Sandbox initialisation should be almost instant. If the application is still
     # running after a couple of seconds, the sandbox failed to initialise.
@@ -132,7 +137,8 @@ def init_sandbox(app_bundle, logger, force_initialisation = False):
     if container_for_app(app_bundle) is None:
         if logger:
             logger.info(
-                "Sandbox initialisation for executable {} succeeded but no appropriate container metadata was created.".format(
+                "Sandbox initialisation for executable {} succeeded \
+                but no appropriate container metadata was created.".format(
                     app_bundle.executable_path()
                 )
             )
@@ -141,10 +147,15 @@ def init_sandbox(app_bundle, logger, force_initialisation = False):
     return True
 
 
-def run_process(executable, duration, stdout_file = subprocess.DEVNULL, stderr_file = subprocess.DEVNULL):
-    """Executes and runs a process for a certain number of seconds (or waits until the process
-    exits when duration == None. Otherwise kills the process. Returns the PID of the process"""
-
+def run_process(executable, duration, stdout_file=subprocess.DEVNULL, stderr_file=subprocess.DEVNULL) -> int:
+    '''
+    Executes and runs a process for a certain number of seconds, then kills the process.
+    :param executable: Filepath to executable to execute
+    :param duration: Duration in seconds or None to let the executable run indefinitely.
+    :param stdout_file: File object to write standard output to
+    :param stderr_file: File object to write standard error to
+    :return: The PID of the running process
+    '''
     process = subprocess.Popen([executable], stdout=stdout_file, stderr=stderr_file)
 
     process_pid = process.pid
@@ -157,38 +168,18 @@ def run_process(executable, duration, stdout_file = subprocess.DEVNULL, stderr_f
     return process_pid
 
 
-def get_sandbox_rules(app_bundle, result_format = "scheme", patch = False):
-    """Returns the final sandboxing ruleset for an application. Optionally
+def get_sandbox_rules(app_bundle, result_format: str = 'scheme', patch: bool = False):
+    '''
+    Obtain the final sandbox ruleset for a target application. Optionally
     also patches the result so that all allow decisions are logged to the
     syslog.
 
-    :param result_format The format to return. Supported are \"scheme\" and \"json\"
-    :param patch Whether to patch the resulting profile. Patching a profile results
-    in a profile that logs all allowed decisions.
-    :returns Raw bytes of sandbox profile."""
+    :param app_bundle: The bundle for which to obtain the sandbox ruleset
+    :param result_format: The format to return. Supported are \"scheme\" and \"json\"
+    :param patch: Whether to patch the resulting profile. Patching a profile results
+                  in a profile that logs all allowed decisions.
+    :return: Raw bytes of sandbox profile.
+    '''
+    container = container_for_app(app_bundle)
 
-    sbpl_base_dir = os.path.join(os.path.dirname(__file__), "../../sbpl")
-    assert os.path.exists(sbpl_base_dir)
-    sbpl_tool = os.path.join(sbpl_base_dir, "build/sbpl")
-    application_base_profile = os.path.join(sbpl_base_dir, "application.sb")
-    assert os.path.exists(sbpl_tool)
-    assert os.path.exists(application_base_profile)
-
-    if container_for_app(app_bundle) is None:
-        raise ValueError("Container for application does not exist.")
-
-    if result_format != "scheme" and result_format != "json":
-        raise ValueError("Invalid format specified.")
-
-    try:
-        cmd = [sbpl_tool,
-               "--" + result_format,
-               "--bundle-id", app_bundle.bundle_identifier(),
-               "--profile", application_base_profile]
-        if patch:
-            cmd.append("--patch")
-
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, cwd=sbpl_base_dir)
-        return result
-    except subprocess.CalledProcessError:
-        return None
+    return call_sbpl(container, result_format=result_format, patch=patch)
