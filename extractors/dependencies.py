@@ -33,7 +33,8 @@ class DependenciesExtractor(AbstractExtractor):
         # The result is just a single JSON file listing the dependencies
         return ResultCount.SINGLE
 
-    def _extract_dependency_infos(self, info):
+    @staticmethod
+    def _extract_dependency_infos(info):
         """Extracts the required keys (CFBundleIdentifier and CFBundleShortVersionString / CFBundleVersion)
         from the info.plist supplied as a dictionary to this method.
 
@@ -79,7 +80,7 @@ class DependenciesExtractor(AbstractExtractor):
 
             if dependency_infos:
                 # Record entry along with further information
-                dependencies_metadata[dependency_rel] = self._extract_dependency_infos(dependency_infos)
+                dependencies_metadata[dependency_rel] = DependenciesExtractor._extract_dependency_infos(dependency_infos)
             else:
                 # Just record the path to the dependency
                 dependencies_metadata[dependency_rel] = {}

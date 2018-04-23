@@ -2,7 +2,7 @@ import lief
 
 from binary.common import extract_rpaths, resolve_library_path, load_cmd_is_weak
 
-import os.path
+import os
 import subprocess
 import tempfile
 
@@ -56,7 +56,6 @@ class Binary:
                     return ent_file.read()
 
                 return plist.parse_resilient(ent_file.name)
-
 
     def application_libraries(self):
         """Return only the libraries / frameworks that are shipped as part of the

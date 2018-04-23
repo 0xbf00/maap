@@ -3,11 +3,9 @@
 import lief
 import plistlib
 
-from bundle.bundle import Bundle
-import misc.filesystem as fs
 import subprocess
 
-import os.path
+import os
 
 from typing import List
 
@@ -95,7 +93,7 @@ def load_cmd_is_weak(lc) -> bool:
     return raw_data[0] == 0x18
 
 
-def imported_symbols(bin_path : str) -> List[str]:
+def imported_symbols(bin_path: str) -> List[str]:
     """Compute the imported symbols for a binary. Currently uses the nm command line
     tool and parses its output, as this is significantly faster for large files than using
     lief and its built-in functionality"""

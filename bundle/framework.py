@@ -1,4 +1,4 @@
-from bundle.bundle import Bundle
+from bundle.bundle import Bundle, InvalidBundle
 from bundle.types import BundleType
 
 import os.path
@@ -17,8 +17,11 @@ class Framework(Bundle):
     """
     def __init__(self, filepath):
         super(Framework, self).__init__(filepath)
-        assert(BUNDLE_IDENTIFIER_KEY in self.info_dictionary())
-        assert(BUNDLE_EXECUTABLE_KEY in self.info_dictionary())
+        if BUNDLE_IDENTIFIER_KEY not in self.info_dictionary():
+            raise InvalidBundle("CFBundleIdentifier missing.")
+
+        if BUNDLE_EXECUTABLE_KEY not in self.info_dictionary():
+            raise InvalidBundle("CFBundleExecutable missing.")
 
     def info_dictionary_path(self):
         return self.absolute_path(INFO_DICT_PATH)

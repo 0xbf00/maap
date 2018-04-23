@@ -1,8 +1,7 @@
 from extractors.base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 
-import os.path
-import shutil
+import os
 import json
 
 import misc.itunes_api as itunes_api

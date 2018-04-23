@@ -4,7 +4,7 @@ from bundle.application import Application
 import misc.filesystem as fs
 from misc.hash import sha256_file
 
-import os.path
+import os
 import json
 
 
@@ -28,7 +28,8 @@ class ManifestExtractor(AbstractExtractor):
     def result_count(cls):
         return ResultCount.SINGLE
 
-    def _build_manifest(self, app) -> list:
+    @staticmethod
+    def _build_manifest(app) -> list:
         hashes = dict()
 
         # Hash all contents of the app
@@ -55,7 +56,7 @@ class ManifestExtractor(AbstractExtractor):
     def extract_data(self, app: Bundle, result_path: str) -> bool:
         assert(isinstance(app, Application))
 
-        manifest = self._build_manifest(app)
+        manifest = ManifestExtractor._build_manifest(app)
         with open(os.path.join(result_path, "manifest.json"), "w") as outfile:
             json.dump(manifest, outfile, indent=4)
 

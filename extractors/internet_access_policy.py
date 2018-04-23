@@ -17,7 +17,9 @@ class IAPExtractor(AbstractExtractor):
 
     More information regarding this special file can be found on the website
     of Little Snitch's developer.
-    # According to TODO, the Internet Access Policy is to be specified as the following file
+
+    According to https://help.obdev.at/littlesnitch/#/ra-developers,
+    the Internet Access Policy is to be specified at the filepath below
     """
 
     @classmethod
