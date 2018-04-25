@@ -3,6 +3,7 @@ import subprocess
 
 from misc.filesystem import project_path
 
+
 def tool_named(name):
     """Returns the full filepath to the specified tool.
     Raises an exception if tool does not exist."""
@@ -13,6 +14,18 @@ def tool_named(name):
 
 
 def call_sbpl(container, result_format = 'scheme', patch = False):
+    """
+    Uses custom sbpl interpreter to compile metadata for a given container.
+    Optionally also supports patching the profile (adding report modifiers to
+    each allow rule) and supports two different result formats.
+
+    :param container: Filepath to container. Container must contain the Container.plist
+                      metadata file
+    :param result_format: 'scheme' or 'json', the supported data files
+    :param patch: Whether to add report modifiers to each allow rule,
+                  forcing the sandbox to log every operation
+    :return: Compiled sandbox profile as bytes
+    """
     sbpl_base_dir = project_path("sbpl")
     assert os.path.exists(sbpl_base_dir)
     sbpl_tool = os.path.join(sbpl_base_dir, "build/sbpl")

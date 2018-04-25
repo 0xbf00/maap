@@ -1,13 +1,13 @@
 """This file contains helper routines that make use of LIEF primitives."""
 
 import lief
-import plistlib
 
 import subprocess
-
 import os
 
 from typing import List
+
+from misc.plist import parse_resilient_bytes
 
 RPATH_DEFAULT_PATHS = [
     "/usr/lib",  # The MathViz.app bundle contains a load instruction
@@ -23,17 +23,16 @@ RPATH_DEFAULT_PATHS = [
 
 
 def extract_embedded_info(binary) -> dict:
-    """Returns the contents of the section
-    containing the Info.plist, iff such a
-    section exists. Single-file libraries
-    (for example libswift* dylibs) frequently
-    contain such sections."""
+    """
+    Returns the contents of the section containing the Info.plist, iff such a section exists.
+    Single-file tools or libraries (for example, libswift* dylibs) frequently contain such sections.
+    :param binary: LIEF binary object from which to extract section
+    :return: Dictionary of embedded Info.plist section or None
+    """
     for sect in binary.sections:
         if sect.name == "__info_plist":
             contents = bytes(sect.content)
-            plist = plistlib.loads(contents)
-
-            return plist
+            return parse_resilient_bytes(contents)
 
     return None
 
@@ -42,11 +41,17 @@ def resolve_library_path(path: str,
                          rpaths: List[str],
                          loader_path: str,
                          executable_path: str) -> str:
-    """Replaces @executable_path and @loader_path.
-    Tries a number of different rpaths and returns the one
-    that results in a valid file being referenced. Throws an exception
-    if no such file was found."""
-
+    """
+    Attempts to resolve library path to an actual location on the filesystem.
+    :param path: The library path to resolve. Library paths can contain placeholders such
+                 as @loader_path, @executable_path and @rpath, which are replaced and
+                 resolved by this function.
+    :param rpaths: List of concrete rpath replacements to try.
+    :param loader_path: @loader_path replacement
+    :param executable_path: @executable_path replacement
+    :return: Concrete filesystem path, in case the library could be resolved
+    :raises ValueError, if library path cannot be resolved
+    """
     # Replace @loader_path and @executable_path
     path = path.replace("@loader_path", loader_path, 1)
     path = path.replace("@executable_path", executable_path, 1)
@@ -55,6 +60,8 @@ def resolve_library_path(path: str,
     if not "@rpath" in path:
         return os.path.realpath(path)
 
+    # Attempt each @rpath replacement candidate, return first result
+    # that actually exists (or raise ValueError if no such rpath)
     for rpath in rpaths:
         new_path = path.replace("@rpath", rpath, 1)
         if os.path.exists(new_path):
@@ -66,9 +73,14 @@ def resolve_library_path(path: str,
 def extract_rpaths(binary,
                    loader_path: str,
                    executable_path: str) -> List[str]:
-    """Extracts @rpath commands from a binary and returns the list
-    of paths encountered."""
-
+    """
+    Extracts @rpath commands from a binary and returns a list of paths encountered.
+    :param binary: The binary from which to extract the rpath commands
+    :param loader_path: @loader_path replacement
+    :param executable_path: @executable_path replacement
+    :return: List of rpath replacements (possible values for @rpath)
+    """
+    # There is a number of default paths
     rpaths = RPATH_DEFAULT_PATHS.copy()
 
     for cmd in binary.commands:
@@ -84,20 +96,26 @@ def extract_rpaths(binary,
 
 
 def load_cmd_is_weak(lc) -> bool:
-    """Checks whether the load command `lc` is a LC_LOAD_WEAK_DYLIB command
-    that is allowed to fail
+    """
+    Checks whether the load command `lc` is a LC_LOAD_WEAK_DYLIB command
+    that is allowed to fail. Unfortunately, this is not yet part of LIEF.
 
-    Unfortunately, so far, lief does not support this out of the box."""
+    :param lc: The LIEF load command to check
+    :return: True, if the load command is LC_LOAD_WEAK_DYLIB
+    """
     raw_data = lc.data
     # 0x18 is the identifier for LC_LOAD_WEAK_DYLIB
     return raw_data[0] == 0x18
 
 
 def imported_symbols(bin_path: str) -> List[str]:
-    """Compute the imported symbols for a binary. Currently uses the nm command line
+    """
+    Compute the imported symbols for a binary. Currently uses the nm command line
     tool and parses its output, as this is significantly faster for large files than using
-    lief and its built-in functionality"""
-
+    lief and its built-in functionality
+    :param bin_path: Path to binary
+    :return: List of external symbols imported.
+    """
     # Execute the nm process
     cmd = ["/usr/bin/nm",
            "-g", # Display only global (external) symbols
@@ -106,9 +124,7 @@ def imported_symbols(bin_path: str) -> List[str]:
 
     try:
         output = subprocess.check_output(cmd, stderr = subprocess.DEVNULL)
-        result = list(map(lambda x: x.decode(encoding = "utf8"),
-                          output.splitlines()))
-        return result
+        return [x.decode(encoding='utf8') for x in output.splitlines()]
     except subprocess.CalledProcessError:
         # On error, simply return empty results
         return []

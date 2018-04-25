@@ -8,11 +8,17 @@ import tempfile
 
 from misc import plist
 from misc.logger import create_logger
+from extern.tools import tool_named
 
 logger = create_logger('binary')
 
 
 class Binary:
+    """
+    Wrapper class around lief binary object. Supports extracting libraries for an application
+    and allows extracting entitlements from binary. Note that lief is rather slow when parsing
+    binaries. Therefore, some operations are implemented as static methods and do not use lief.
+    """
     def __init__(self, filepath, loader_path = None, executable_path = None):
         try:
             if not lief.is_macho(filepath):
@@ -32,18 +38,20 @@ class Binary:
     @classmethod
     def get_entitlements(cls, filepath, raw = False):
         """
-        Uses jtool to extract the entitlements from a target binary.
-        Returns an empty dictionary if no entitlements were found or an error occurred.
-        If the caller requests raw entitlements, returns a bytestring of the entitlements!
+        Extract entitlements from a target binary.
+
+        :param filepath: filepath for binary for which to extract entitlements
+        :param raw: Whether to return the raw bytes. If false, returns a dictionary. Else, returns bytes
+        :return: Dictionary containing application entitlements. Returns empty dictionary
+                 in case of errors.
         """
-        JTOOL_PATH = os.path.join(os.path.dirname(__file__), "../extern/jtool")
-        assert (os.path.exists(JTOOL_PATH))
+        jtool = tool_named("jtool")
 
         with tempfile.NamedTemporaryFile() as ent_file:
             env = os.environ.copy()
             env["ARCH"] = "x86_64"
 
-            return_value = subprocess.run([JTOOL_PATH, "--ent", filepath],
+            return_value = subprocess.run([jtool, "--ent", filepath],
                                       stdin=subprocess.DEVNULL, stdout=ent_file,
                                       stderr=subprocess.DEVNULL, env = env)
 
@@ -58,23 +66,28 @@ class Binary:
                 return plist.parse_resilient(ent_file.name)
 
     def application_libraries(self):
-        """Return only the libraries / frameworks that are shipped as part of the
-        application bundle.
-
-        Note that this still might contain Apple libraries, because
-        for example the Swift libraries are shipped as part of an app.
         """
-
+        Return only linked libraries that are shipped as part of the application bundle.
+        Note that this still might contain Apple libraries, because for instance Swift libraries
+        are shipped as part of an app.
+        :return: List of application libraries
+        """
         all_libraries = self.linked_libraries()
 
         application_path = self.containing_folder
         if application_path.endswith("/Contents/MacOS"):
             application_path = application_path[:-len("/Contents/MacOS")]
 
-        return list(filter(lambda x: x.startswith(application_path) and x != self.filepath, all_libraries))
+        return [ x for x in all_libraries if x.startswith(application_path) and x != self.filepath ]
 
     def linked_libraries(self):
-        assert(self.parsed_binary)
+        """
+        Return resolved list of linked libraries for a given binary.
+
+        :return: List of linked libraries.
+        :raise ValueError, if library cannot be resolved.
+        """
+        assert self.parsed_binary
 
         linked_libs = list(self.parsed_binary.libraries)
         rpaths = extract_rpaths(self.parsed_binary, self.loader_path, self.executable_path)

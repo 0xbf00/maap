@@ -7,29 +7,41 @@ import os.path
 import tempfile
 import subprocess
 import plistlib
-from misc.filesystem import project_path
+from extern.tools import tool_named
 
-SANITIZER_PATH = project_path("mas_tools/extern/plist_sanitizer")
-assert(os.path.exists(SANITIZER_PATH))
+SANITIZER = tool_named("plist_sanitizer")
+
+
+def parse_resilient_bytes(b: bytes) -> dict:
+    """
+    Parses a bytes object representing a PLIST file.
+    :param b: Bytes object to parse
+    :return: Parsed dictionary.
+    :raises ValueError on failure
+    """
+    with tempfile.NamedTemporaryFile(mode='wb') as outfile:
+        outfile.write(b)
+
+        return parse_resilient(outfile.name)
 
 
 def parse_resilient(filepath: str) -> dict:
-    """Parse a PLIST file.
-
-    Compared to plistlib's functionality, this function tries to recover on error.
-    plistlib sometimes fails due to slightly malformed XML, even though macOS reads
-    such failing files without a problem."""
-
+    """
+    Parses a plist object from disk.
+    :param filepath: Filepath to PLIST to parse
+    :return: Parsed dictionary
+    :raises ValueError on failure
+    """
     if not os.path.exists(filepath):
         raise ValueError("File does not exist.")
 
     try:
         with open(filepath, "rb") as plistFile:
             return plistlib.load(plistFile)
-    except plistlib.InvalidFileException:
+    except:
         with tempfile.TemporaryDirectory() as tempdir:
             tempfile_out = os.path.join(tempdir, "Info-new.plist")
-            return_value = subprocess.run([SANITIZER_PATH, filepath, tempfile_out],
+            return_value = subprocess.run([SANITIZER, filepath, tempfile_out],
                                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                           stderr=subprocess.DEVNULL)
             if return_value.returncode != 0:
