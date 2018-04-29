@@ -1,17 +1,17 @@
-"""Filesystem related util functions"""
-import os.path
+"""Filesystem related utility functions"""
+import os
 from misc.hash import sha256_file
 
 
 def is_same_file(pathA: str, pathB: str) -> bool:
-    '''
+    """
     Checks whether two files actually refer to the same file.
     :param pathA: First filepath
     :param pathB: Second filepath to check against first filepath
     :return: True, if the files refer to the same file or they have the same contents (as measured
              by their hash). This is a workaround for a problem where developers duplicate a bunch
              of application content, because they apparently do not realise how file linking works.
-    '''
+    """
     if os.path.samefile(pathA, pathB):
         return True
     else:
@@ -27,16 +27,20 @@ def is_same_file(pathA: str, pathB: str) -> bool:
 
 
 def path_remove_prefix(path: str, prefix: str) -> str:
-    """Removes a prefix from a path string, if the path has such a prefix."""
+    """
+    Removes a prefix from a path string, if the path has such a prefix.
+    """
     if path.startswith(prefix):
         return path[len(prefix):]
     return path
 
 
 def get_size(path):
-    """Returns the total size of entries in `path` if path
+    """
+    Returns the total size of entries in `path` if path
     denotes a directory. Otherwise simply returns the size
-    in bytes of the file"""
+    in bytes of the file
+    """
     if os.path.isdir(path):
         total_size = 0
         for dirpath, dirnames, filenames in os.walk(path):
@@ -49,10 +53,14 @@ def get_size(path):
 
 
 def project_root():
-    """Returns root directory of project"""
+    """
+    Returns root directory of project
+    """
     return os.path.realpath(os.path.join(os.path.basename(__file__), "../.."))
 
 
 def project_path(relative_path = ''):
-    """Returns a full path to a file, identified by its relative path from the project root"""
+    """
+    Returns a full path to a file, identified by its relative path from the project root
+    """
     return os.path.join(project_root(), relative_path)

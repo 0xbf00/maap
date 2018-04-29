@@ -1,15 +1,16 @@
+"""Functions to hash files."""
+
 from hashlib import sha256
 
 
 def hash_file(algorithm, filepath: str) -> str:
-    """Returns the hash of a file (using the algorithm ``algorithm``) as denoted by ``filepath``
-
-    The algorithm should be an object of the hashlib class. One
-    example would be hash_file(hashlib.sha256, "/tmp/file1")
-    Deals with large files by iteratively reading in the file (block size is 1MB at the
-    moment) and iteratively updating the hash.
     """
+    Returns the hash of a file using a specific algorithm.
 
+    :param algorithm: The algorithm to use. Should be an object of the haslib class such as hashlib.sha256
+    :param filepath: File to hash
+    :return: Hexdigest encoded as a string.
+    """
     # 1 MB
     BLOCK_SIZE = 1024 * 1024
 
@@ -22,8 +23,6 @@ def hash_file(algorithm, filepath: str) -> str:
             buf = infile.read(BLOCK_SIZE)
 
         return hash.hexdigest()
-
-    return None
 
 
 def sha256_file(filepath: str) -> str:

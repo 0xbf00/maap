@@ -9,14 +9,14 @@ from extern.tools import tool_named, call_sbpl
 
 
 def all_apps(at: str = "/Applications", mas_only: bool = False, sandboxed_only: bool = False):
-    '''
+    """
     Returns all apps from a target folder
 
     :param at: The base folder where to search for applications
     :param mas_only: Whether to only consider applications from the Mac App Store
     :param sandboxed_only: Whether to only return sandboxed applications
     :return: Filepaths to applications fulfilling the criteria specified
-    '''
+    """
     all_entries = [ os.path.join(at, x) for x in os.listdir(at) if x.endswith(".app") ]
 
     for entry in all_entries:
@@ -32,13 +32,13 @@ def all_apps(at: str = "/Applications", mas_only: bool = False, sandboxed_only: 
 
 
 def container_for_app(app):
-    '''
+    """
     Returns the container directory used by the application or None if the container does not exist.
 
     :param app: The app for which to find the container directory. Note that valid arguments are both
                 a filepath to the application and a bundle for that application
     :return: Filepath to the container or None, if the lookup failed.
-    '''
+    """
     # Handle code that already has a bundle for an app
     if isinstance(app, Bundle):
         app_bundle = app
@@ -65,7 +65,7 @@ def container_for_app(app):
 
 
 def _entitlements_can_be_parsed(app_bundle: Bundle) -> bool:
-    '''
+    """
     Check whether an application's entitlements can be parsed by libsecinit.
     We only check part of the process, namely the parsing of entitlements via xpc_create_from_plist.
 
@@ -73,7 +73,7 @@ def _entitlements_can_be_parsed(app_bundle: Bundle) -> bool:
     :type app_bundle: Bundle
 
     :return: True, iff the entitlements of the main executable can be parsed, else false.
-    '''
+    """
     # No entitlements, no problem
     # If the app contains no entitlements, entitlement validation cannot fail.
     if not app_bundle.has_entitlements():
@@ -89,7 +89,7 @@ def _entitlements_can_be_parsed(app_bundle: Bundle) -> bool:
 
 
 def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisation: bool = False) -> bool:
-    '''
+    """
     Initialises the sandbox for a particular app bundle.
 
     :param app_bundle: The App for which to initialise the App Sandbox
@@ -98,7 +98,7 @@ def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisatio
            exists that indicates the sandbox has already been initialised
     :return: Boolean value indicating whether the sandbox was successfully initialised
              (or was already initialised)
-    '''
+    """
     # Guarding against a few applications that ship with entitlements libsecinit cannot parse.
     if not _entitlements_can_be_parsed(app_bundle):
         return False
@@ -148,14 +148,14 @@ def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisatio
 
 
 def run_process(executable, duration, stdout_file=subprocess.DEVNULL, stderr_file=subprocess.DEVNULL) -> int:
-    '''
+    """
     Executes and runs a process for a certain number of seconds, then kills the process.
     :param executable: Filepath to executable to execute
     :param duration: Duration in seconds or None to let the executable run indefinitely.
     :param stdout_file: File object to write standard output to
     :param stderr_file: File object to write standard error to
     :return: The PID of the running process
-    '''
+    """
     process = subprocess.Popen([executable], stdout=stdout_file, stderr=stderr_file)
 
     process_pid = process.pid
@@ -169,7 +169,7 @@ def run_process(executable, duration, stdout_file=subprocess.DEVNULL, stderr_fil
 
 
 def get_sandbox_rules(app_bundle, result_format: str = 'scheme', patch: bool = False):
-    '''
+    """
     Obtain the final sandbox ruleset for a target application. Optionally
     also patches the result so that all allow decisions are logged to the
     syslog.
@@ -179,7 +179,7 @@ def get_sandbox_rules(app_bundle, result_format: str = 'scheme', patch: bool = F
     :param patch: Whether to patch the resulting profile. Patching a profile results
                   in a profile that logs all allowed decisions.
     :return: Raw bytes of sandbox profile.
-    '''
+    """
     container = container_for_app(app_bundle)
 
     return call_sbpl(container, result_format=result_format, patch=patch)

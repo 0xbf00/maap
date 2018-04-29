@@ -3,7 +3,7 @@ the `plistlib` module exists, it fails to parse some files that are malformed
 and choke up the XML parser, while being accepted by macOS. This module
 bridges the gap and attempts to accept all plists that are accepted by macOS."""
 
-import os.path
+import os
 import tempfile
 import subprocess
 import plistlib
