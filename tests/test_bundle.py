@@ -1,6 +1,6 @@
 import unittest
 
-from bundle.bundle import Bundle
+from bundle.bundle import Bundle, InvalidBundle
 from bundle.types import BundleType
 
 
@@ -35,9 +35,7 @@ class TestBundle(unittest.TestCase):
                          BundleType.KEXT)
 
         # Check failure cases
-        with self.assertRaises(ValueError):
-            Bundle.make("/System/Library/Frameworks/vecLib.framework")
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(InvalidBundle):
             Bundle.make("/System/Library/Frameworks/Kernel.framework")
 
     def test_path_for_resource(self):

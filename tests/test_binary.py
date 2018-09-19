@@ -42,30 +42,6 @@ class TestBinary(unittest.TestCase):
         for app_library in itunes_app_libraries:
             self.assertIn(app_library, itunes_application_libraries)
 
-    def test_linked_libraries(self):
-        # Testing Calculator.app. This application does not make use of @rpath, @executable_path, ...
-        # Generated using `otool -L /Applications/Calculator.app/Contents/MacOS/Calculator`
-        calculator_expected_libraries = [
-            "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
-            "/System/Library/PrivateFrameworks/SpeechDictionary.framework/Versions/A/SpeechDictionary",
-            "/System/Library/PrivateFrameworks/SpeechObjects.framework/Versions/A/SpeechObjects",
-            "/System/Library/PrivateFrameworks/Calculate.framework/Versions/A/Calculate",
-            "/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices",
-            "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
-            "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
-            "/usr/lib/libobjc.A.dylib",
-            "/usr/lib/libSystem.B.dylib",
-            "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
-            "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
-            "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics"
-        ]
-
-        loaded_binary = bin.Binary("/Applications/Calculator.app/Contents/MacOS/Calculator")
-        linked_libs = loaded_binary.linked_libraries()
-        self.assertTrue(len(linked_libs) == len(calculator_expected_libraries))
-        for linked_lib in linked_libs:
-            self.assertIn(linked_lib, calculator_expected_libraries, "Found library not present in static information")
-
     def test_get_entitlements(self):
         # Assuming the entitlements in system apps do not change much.
         computed_entitlements = bin.Binary.get_entitlements("/Applications/Calculator.app/Contents/MacOS/Calculator")

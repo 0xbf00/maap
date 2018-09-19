@@ -45,10 +45,3 @@ class TestApplication(unittest.TestCase):
     def test_executable(self):
         bin = self.system_app.executable()
         self.assertIsNotNone(bin)
-
-    def test_loaded_libraries(self):
-        app = self.system_app
-        bin = app.executable()
-
-        self.assertCountEqual(bin.application_libraries(), [])
-        self.assertTrue(len(bin.linked_libraries()) == 12)
