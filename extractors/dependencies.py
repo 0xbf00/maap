@@ -1,8 +1,8 @@
-from extractors.base import AbstractExtractor, ResultCount
+from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 from bundle.application import Application
-import misc.filesystem as fs
-import binary.common
+from misc import filesystem as fs
+from binary import common
 
 import os.path
 import lief

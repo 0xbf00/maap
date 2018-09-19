@@ -1,7 +1,7 @@
-from extractors.base import AbstractExtractor, ResultCount
+from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 from bundle.application import Application
-import misc.filesystem as fs
+from misc import filesystem as fs
 from misc.hash import sha256_file
 
 import os

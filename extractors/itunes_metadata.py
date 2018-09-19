@@ -1,4 +1,4 @@
-from extractors.base import AbstractExtractor, ResultCount
+from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 
 import os

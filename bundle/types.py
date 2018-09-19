@@ -1,6 +1,5 @@
 from enum import Enum, auto
-import os.path
-
+from os.path import splitext
 
 class BundleType(Enum):
     APPLICATION    = auto()
@@ -28,7 +27,7 @@ class BundleType(Enum):
             ".xpc": BundleType.XPC_EXTENSION
         }
 
-        (_, ext) = os.path.splitext(bundlepath)
+        (_, ext) = splitext(bundlepath)
         if ext in BUNDLE_EXTENSIONS:
             return BUNDLE_EXTENSIONS[ext]
         else:

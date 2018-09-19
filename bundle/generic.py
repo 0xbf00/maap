@@ -1,5 +1,5 @@
-from bundle.application import Application
-from bundle.types import BundleType
+from .application import Application
+from .types import BundleType
 
 class GenericBundle(Application):
     """If a bundle could not be identified as either being

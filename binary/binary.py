@@ -1,6 +1,6 @@
 import lief
 
-from binary.common import extract_rpaths, resolve_library_path, load_cmd_is_weak
+from .common import extract_rpaths, resolve_library_path, load_cmd_is_weak
 
 import os
 import subprocess

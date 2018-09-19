@@ -18,7 +18,7 @@ sandbox differs from the one of the main app
 [1]: https://developer.apple.com/library/content/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingXPCServices.html
 """
 
-from extractors.base import AbstractExtractor, ResultCount
+from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 from bundle.types import BundleType
 

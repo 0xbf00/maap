@@ -6,10 +6,10 @@ import os
 import sys
 
 from typing import List
-import misc.plist as plist
-import misc.filesystem as fs
+from misc import plist as plist
+from misc import filesystem as fs
 
-from bundle.types import BundleType
+from .types import BundleType
 
 import abc
 

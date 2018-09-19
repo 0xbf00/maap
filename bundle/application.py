@@ -1,5 +1,5 @@
-from bundle.bundle import Bundle, InvalidBundle
-from bundle.types import BundleType
+from .bundle import Bundle, InvalidBundle
+from .types import BundleType
 
 import os.path
 

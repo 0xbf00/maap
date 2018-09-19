@@ -2,7 +2,7 @@
 
 import logging
 import os
-from misc.filesystem import project_path
+from .filesystem import project_path
 
 LOGGING_DIRECTORY = project_path("mas_tools/logs/")
 if not os.path.exists(LOGGING_DIRECTORY):

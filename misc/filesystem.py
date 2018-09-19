@@ -1,6 +1,6 @@
 """Filesystem related utility functions"""
 import os
-from misc.hash import sha256_file
+from .hash import sha256_file
 
 
 def is_same_file(pathA: str, pathB: str) -> bool:

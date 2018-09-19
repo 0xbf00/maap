@@ -3,7 +3,7 @@
 import os
 import sqlite3
 import datetime
-from misc.filesystem import project_path
+from .filesystem import project_path
 
 VERSIONS_DB = project_path("mas_tools/scripts/app_versions/versions.db")
 assert os.path.exists(VERSIONS_DB)
