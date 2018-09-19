@@ -26,21 +26,15 @@ def call_sbpl(container, result_format = 'scheme', patch = False):
                   forcing the sandbox to log every operation
     :return: Compiled sandbox profile as bytes
     """
-    sbpl_base_dir = project_path("sbpl")
-    assert os.path.exists(sbpl_base_dir)
-    sbpl_tool = os.path.join(sbpl_base_dir, "build/sbpl")
-    application_base_profile = os.path.join(sbpl_base_dir, "application.sb")
-    assert os.path.exists(sbpl_tool)
-    assert os.path.exists(application_base_profile)
+    sbpl_base_dir = project_path("simbple")
+    sbpl_tool = os.path.join(sbpl_base_dir, "build/bin/simbple")
 
     if result_format != "scheme" and result_format != "json":
         raise ValueError("Invalid format specified.")
 
     try:
-        cmd = [sbpl_tool,
-               "--" + result_format,
-               "--container", container,
-               "--profile", application_base_profile]
+        cmd = [sbpl_tool, "--" + result_format, os.path.join(container, "Container.plist")]
+
         if patch:
             cmd.append("--patch")
 
