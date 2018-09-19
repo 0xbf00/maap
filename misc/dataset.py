@@ -5,10 +5,6 @@ import sqlite3
 import datetime
 from .filesystem import project_path
 
-VERSIONS_DB = project_path("mas_tools/scripts/app_versions/versions.db")
-assert os.path.exists(VERSIONS_DB)
-conn = sqlite3.connect(VERSIONS_DB)
-
 
 def _parse_timestamp(str):
     # Parses the time stamp used by Apple in their logging format
@@ -17,6 +13,12 @@ def _parse_timestamp(str):
 
 
 def _version_info(bundle_id, version):
+    VERSIONS_DB = project_path("mas_tools/scripts/app_versions/versions.db")
+    if not os.path.exists(VERSIONS_DB):
+        return
+    
+    conn = sqlite3.connect(VERSIONS_DB)
+
     c = conn.cursor()
     c.execute("SELECT version, release_date "
               "FROM versions JOIN apps on versions.app_id = apps.id "
