@@ -74,7 +74,7 @@ class DependenciesExtractor(AbstractExtractor):
             else:
                 # Try to instead use embedded information
                 # Note: extract_embedded_info returns None on failure
-                dependency_infos = binary.common.extract_embedded_info(
+                dependency_infos = common.extract_embedded_info(
                     lief.parse(dependency)
                 )
 
