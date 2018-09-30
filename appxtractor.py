@@ -30,11 +30,19 @@ import shutil
 import functools
 import argparse
 import signal
+import tempfile
 
 import extractors.base
 
 from bundle.bundle import Bundle
 from misc.logger import create_logger
+from misc.archives import extract_zip, extract_tar, extract_gzip
+import misc.dmglib as dmglib
+
+
+logger = create_logger('appxtractor')
+# Instantiate the extractors once
+info_extractors = [ cls() for cls in extractors.base.all_extractors() ]
 
 
 class SignalIntelligence:
@@ -59,10 +67,7 @@ def folder_for_app(results_dir : str, app : Bundle) -> str:
     Note that this function _does not_ touch the filesystem.
     Therefore, no directories are created as part of this functionality"""
     app_bundle_id = app.bundle_identifier()
-    app_version = app.version()
-
-    if not app_version:
-        return None
+    app_version = app.version() or 'v.UNKNOWN'
 
     return os.path.join(results_dir, app_bundle_id, app_version)
 
@@ -100,11 +105,12 @@ def run_extractor(extractor, app, app_result_path) -> bool:
     return status_code
 
 
-def process_app(app_path, info_extractors, logger, output):
+def process_app(app_path, info_extractors, logger, output, source_hint: str=None):
     """Process an app using the supplied `info_extractors`
 
     Log potentially relevant information to `logger` and return results
-    at `output`
+    at `output`. If supplied, the `origin_hin` will be written to
+    `output/source`
     """
 
     app = Bundle.make(app_path)
@@ -120,6 +126,12 @@ def process_app(app_path, info_extractors, logger, output):
     os.makedirs(output_folder)
 
     try:
+        # The source_hint can for example be used to store an application's identifier for
+        # the third-party platform where the app was downloaded from (i.e macupdate)
+        if source_hint is not None:
+            with open(os.path.join(output_folder, 'source'), 'w') as source_file:
+                source_file.write(source_hint)
+
         extraction_status = functools.reduce(
             lambda status, extractor: status & run_extractor(extractor, app, output_folder),
             info_extractors,
@@ -133,13 +145,78 @@ def process_app(app_path, info_extractors, logger, output):
         )
 
 
+def iterate_apps_folder(input, source_hint=None):
+    """
+    Iterate all .app bundles in the specified folder.
+    Returns pairs of .app bundle path, source_hint
+    """
+    for root, dirs, files in os.walk(input):
+        if root.endswith('.app'):
+            yield root, source_hint
+
+        app_candidates = [ os.path.abspath(os.path.join(root, d))
+            for d in dirs
+            if d.endswith('.app') ]
+
+        # Do not recurse further down into app bundles
+        dirs[:] = [ d 
+            for d in dirs 
+            if not d.endswith('.app') ]
+
+        for candidate in app_candidates:
+            yield candidate, source_hint
+
+
+def iterate_archived_apps_folder(input):
+    """
+    Process all archives: Check for included .app bundles.
+    Returns pairs of .app bundle path, source_hint
+    """
+    for root, dirs, files in os.walk(input):
+        for f in files:
+            filepath = os.path.join(root, f)
+
+            # Try to mount as dmg
+            if      dmglib.DiskImage.is_valid(filepath) and\
+                not dmglib.DiskImage.is_encrypted(filepath):
+                try:
+                    with dmglib.attachedDiskImage(filepath) as mount_points:
+                        for point in mount_points:
+                            yield from iterate_apps_folder(point, source_hint=f)
+                except dmglib.AttachingFailed:
+                    # This is a dmg file, but could not be attached (e.g. because of
+                    # license agreement dialog)
+                    continue
+            else:
+                # Try to mount this as one of the support archive formats
+                with tempfile.TemporaryDirectory() as tempdir:
+                    success = extract_zip(filepath, tempdir) or\
+                              extract_tar(filepath, tempdir)
+
+                    if success:
+                        yield from iterate_apps_folder(tempdir, source_hint=f)
+                    else:
+                        success, _ = extract_gzip(filepath, tempdir)
+
+                        if success:
+                            yield from iterate_archived_apps_folder(tempdir)
+                        else:
+                            logger.error('Could not process archive / image at {}'.format(filepath))
+
+
 def main():
-    logger = create_logger('appxtractor')
     logger.info("appxtractor starting")
 
     parser = argparse.ArgumentParser(description='Extract information from Mac Apps.')
     parser.add_argument('-i', '--input', required=True,
                         help='The directory that contains the applications to analyse.')
+    parser.add_argument('-t', '--type', 
+                        default='app_folder', const='app_folder', 
+                        nargs='?', choices=['app_folder', 'archive_folder'],
+                        help='''Process input folder as folder containing .app bundles
+                                or as folder full of archives containing .app bundles.
+                                Supported archives formats are zip, tar, gz and dmg. 
+                                Default type: app_folder''')
     parser.add_argument('-o', '--output', required=True,
                         help='Output directory: This directory shall also be passed to this program to update an existing output folder.')
     parser.add_argument('--all-apps', dest='all_apps', default=False, action='store_true',
@@ -147,42 +224,36 @@ def main():
 
     args = parser.parse_args()
 
-    # Instantiate the extractors once
-    info_extractors = [cls() for cls in extractors.base.all_extractors()]
-
     exit_watcher = SignalIntelligence()
 
-
     print("[+] Analysing apps at \"{}\"".format(args.input))
+    print("[+] Press Ctrl+C to cancel analysis (can later be resumed)\n")
 
-    all_apps = []
+    if args.type == 'app_folder':
+        app_candidates = iterate_apps_folder(args.input)
+    elif args.type == 'archive_folder':
+        app_candidates = iterate_archived_apps_folder(args.input)
+    else:
+        assert False and 'Iteration type not supported.'
 
-    for app_path in os.listdir(args.input):
-        full_path = os.path.join(args.input, app_path)
-        if app_path.endswith(".app") and Bundle.is_bundle(full_path):
-            bundle = Bundle.make(full_path)
-            if args.all_apps:
-                all_apps.append(full_path)
-            elif bundle.is_mas_app():
-                all_apps.append(full_path)
-
-    print("[+] Found {} apps to analyse.".format(len(all_apps)))
-    print("\n[+] Press Ctrl+C to cancel analysis (can later be resumed)")
-
-    for (index, app_path) in enumerate(all_apps):
-        # Print crude progress bar
+    for path, hint in app_candidates:
         if exit_watcher.should_exit:
             break
 
-        print('\r[+] Progress: {:0>5d}/{:0>5d} apps done -- {:2.4f}%'.format(index+1,
-                                                                             len(all_apps),
-                                                                             ((index+1) / len(all_apps)) * 100),
-              end='')
+        if not Bundle.is_bundle(path):
+            continue
 
-        process_app(app_path=app_path,
+        bundle = Bundle.make(path)
+        if not bundle.is_mas_app() and not args.all_apps:
+            continue
+
+        print('[+] Processing {}'.format(path))
+
+        process_app(app_path=path,
                     info_extractors=info_extractors,
                     logger=logger,
-                    output=args.output)
+                    output=args.output,
+                    source_hint=hint)
 
     logger.info("appxtractor stopping")
 

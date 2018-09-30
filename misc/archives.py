@@ -54,7 +54,10 @@ def extract_gzip(path: str, to: str) -> (bool, str):
 
 	handle, temp = tempfile.mkstemp(dir=to)
 	try:
-		os.write(handle, gzip_file.read())
+		n_written = os.write(handle, gzip_file.read())
+		if n_written <= 0:
+			raise OSError('Did not write any output')
+
 		return True, temp
 	except OSError:
 		# Remove temporary file from filesystem if unpack fails. Otherwise,
@@ -110,5 +113,4 @@ def extract_tar(path: str, to: str) -> bool:
 
 			return True
 	except tarfile.ReadError:
-		print('Error occurred during tar-processing of {path}'.format(path=path))
 		return False
