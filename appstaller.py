@@ -12,6 +12,7 @@ import argparse
 from os import popen
 
 from misc.logger import create_logger
+from misc.os_support import os_is_compatible
 import misc.itunes_api as itunes_api
 
 logger = create_logger('appstaller')
@@ -88,7 +89,7 @@ def main():
             current_price = itunes_info.get_price()
             min_version_required = itunes_info.min_version()
 
-            if current_price == 0.0 and min_version_required and not min_version_required.startswith('10.13'):
+            if current_price == 0.0 and min_version_required and os_is_compatible(min_version_required):
                 # Attempt to purchase free app
                 success = install_app(trackId, is_update=False, force_install=False)
                 if not success:
