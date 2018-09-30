@@ -1,5 +1,7 @@
 """Filesystem related utility functions"""
 import os
+import shutil
+
 from .hash import sha256_file
 
 
@@ -64,3 +66,21 @@ def project_path(relative_path = ''):
     Returns a full path to a file, identified by its relative path from the project root
     """
     return os.path.join(project_root(), relative_path)
+
+
+def copy(src, dst):
+    """
+    Copies data from `src` to `dst`.
+
+    Like shutil's copy2, this function attempts to copy all relevant file
+    metadata. However unlike copy2, this function will not hard fail when
+    metadata cannot be copied.
+
+    Executables protected by SIP for example cannot be copied successfully
+    using shutil's copy2.
+    """
+    shutil.copy(src, dst)
+    try:
+        shutil.copystat(src, dst)
+    except PermissionError:
+        pass

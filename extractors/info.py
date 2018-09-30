@@ -2,7 +2,7 @@ from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 
 import os.path
-import shutil
+import misc.filesystem as fs
 
 
 class InfoExtractor(AbstractExtractor):
@@ -24,5 +24,5 @@ class InfoExtractor(AbstractExtractor):
             self.log_error("Info.plist for {} {} could not be found.".format(app.bundle_type, app.filepath))
             return False
 
-        shutil.copy2(info_path, os.path.join(result_path, "Info.plist"))
+        fs.copy(info_path, os.path.join(result_path, "Info.plist"))
         return True

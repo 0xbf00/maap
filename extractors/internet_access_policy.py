@@ -2,7 +2,7 @@ from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 
 import os.path
-import shutil
+import misc.filesystem as fs
 
 
 class IAPExtractor(AbstractExtractor):
@@ -40,5 +40,5 @@ class IAPExtractor(AbstractExtractor):
             return True
         else:
             self.log_info("IAP for application {} does exist.".format(app.filepath))
-            shutil.copy2(iap_path, os.path.join(result_path, "iap.plist"))
+            fs.copy(iap_path, os.path.join(result_path, "iap.plist"))
             return True

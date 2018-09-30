@@ -2,7 +2,7 @@ from .base import AbstractExtractor, ResultCount
 from bundle.bundle import Bundle
 
 import os.path
-import shutil
+import misc.filesystem as fs
 
 
 class ExecutableExtractor(AbstractExtractor):
@@ -27,5 +27,5 @@ class ExecutableExtractor(AbstractExtractor):
             self.log_error("Executable for {} {} could not be found.".format(app.bundle_type, app.filepath))
             return False
 
-        shutil.copy2(executable_path, os.path.join(result_path, "executable.bin"))
+        fs.copy(executable_path, os.path.join(result_path, "executable.bin"))
         return True
