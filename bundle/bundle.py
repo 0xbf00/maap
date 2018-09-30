@@ -220,7 +220,7 @@ class Bundle(abc.ABC):
 
         if "CFBundleShortVersionString" in info_dict:
             version = info_dict["CFBundleShortVersionString"]
-        elif "CFBundleVersion" in info_dict():
+        elif "CFBundleVersion" in info_dict:
             version = info_dict["CFBundleVersion"]
 
         return version
