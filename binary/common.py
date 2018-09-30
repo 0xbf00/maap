@@ -32,7 +32,10 @@ def extract_embedded_info(binary) -> dict:
     for sect in binary.sections:
         if sect.name == "__info_plist":
             contents = bytes(sect.content)
-            return parse_resilient_bytes(contents)
+            try:
+                return parse_resilient_bytes(contents)
+            except ValueError:
+                return None
 
     return None
 
