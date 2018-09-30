@@ -21,6 +21,7 @@ def parse_resilient_bytes(b: bytes) -> dict:
     """
     with tempfile.NamedTemporaryFile(mode='wb') as outfile:
         outfile.write(b)
+        outfile.flush()
 
         return parse_resilient(outfile.name)
 
