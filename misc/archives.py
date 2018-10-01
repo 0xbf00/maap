@@ -61,7 +61,7 @@ def extract_gzip(path: str, to: str) -> (bool, str):
 
 		fs.rchmod(to, 0o755)
 		return True, temp
-	except OSError:
+	except (OSError, IsADirectoryError) as e:
 		# Remove temporary file from filesystem if unpack fails. Otherwise,
 		# because an empty file is processed successfully by this function, we
 		# might get an infinite loop in future calls when processing the containing
@@ -103,7 +103,11 @@ def extract_zip(path: str, to: str) -> bool:
 			fs.rchmod(to, 0o755)
 
 			return True
-	except zipfile.BadZipFile:
+	except (zipfile.BadZipFile, IsADirectoryError) as e:
+		# The IsADirectoryError is raised when the zip file in question
+		# contains files with conflicting names, one being a directory
+		# and one being a standard file and the zipfile is extracted to a
+		# case-insensitive file system!
 		return False
 
 
@@ -122,5 +126,5 @@ def extract_tar(path: str, to: str) -> bool:
 			fs.rchmod(to, 0o755)
 
 			return True
-	except tarfile.ReadError:
+	except (tarfile.ReadError, IsADirectoryError) as e:
 		return False
