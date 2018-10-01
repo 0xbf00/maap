@@ -84,3 +84,17 @@ def copy(src, dst):
         shutil.copystat(src, dst)
     except PermissionError:
         pass
+
+
+def rchmod(parent, mode, dir_fd=None, follow_symlinks=True):
+    """
+    Recursive chmod.
+    Set permissions for an entire directory, including the root directoy.
+    """
+    os.chmod(parent, mode, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    for dirpath, dirnames, filenames in os.walk(parent):
+        for dname in dirnames:
+            os.chmod(os.path.join(dirpath, dname), mode, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+        for fname in filenames:
+            os.chmod(os.path.join(dirpath, fname), mode, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
