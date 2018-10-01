@@ -248,7 +248,7 @@ class Bundle(abc.ABC):
 
     def __str__(self):
         type = self.__class__.__name__
-        version = "v" + self.version()
+        version = "v" + (self.version() or 'UNKNOWN')
         identifier = self.info_dictionary()["CFBundleIdentifier"] \
             if "CFBundleIdentifier" in self.info_dictionary() \
             else "unknown.bundle"
