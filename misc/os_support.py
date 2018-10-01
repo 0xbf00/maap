@@ -20,6 +20,7 @@ def os_release() -> str:
 
 	return ver
 
+
 def os_is_compatible(required_os_version: str) -> bool:
 	"""
 	Check whether the currently installed OS is compatible with
