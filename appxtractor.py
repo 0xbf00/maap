@@ -67,7 +67,12 @@ def folder_for_app(results_dir : str, app : Bundle) -> str:
     Note that this function _does not_ touch the filesystem.
     Therefore, no directories are created as part of this functionality"""
     app_bundle_id = app.bundle_identifier()
-    app_version = app.version() or 'v.UNKNOWN'
+    if app_bundle_id is '' or app_bundle_id is None:
+        app_bundle_id = 'b.UNKNOWN'
+
+    app_version = app.version()
+    if app_version is '' or app_version is None:
+        app_version = 'v.UNKNOWN'
 
     return os.path.join(results_dir, app_bundle_id, app_version)
 
