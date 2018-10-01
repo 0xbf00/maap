@@ -167,7 +167,7 @@ def iterate_apps_folder(input, source_hint=None):
             yield candidate, source_hint
 
 
-def iterate_archived_apps_folder(input):
+def iterate_archived_apps_folder(input, source_hint=None):
     """
     Process all archives: Check for included .app bundles.
     Returns pairs of .app bundle path, source_hint
@@ -182,7 +182,8 @@ def iterate_archived_apps_folder(input):
                 try:
                     with dmglib.attachedDiskImage(filepath) as mount_points:
                         for point in mount_points:
-                            yield from iterate_apps_folder(point, source_hint=f)
+                            yield from iterate_apps_folder(point, 
+                                source_hint=source_hint or f)
                 except dmglib.AttachingFailed:
                     # This is a dmg file, but could not be attached (e.g. because of
                     # license agreement dialog)
@@ -194,12 +195,12 @@ def iterate_archived_apps_folder(input):
                               extract_tar(filepath, tempdir)
 
                     if success:
-                        yield from iterate_apps_folder(tempdir, source_hint=f)
+                        yield from iterate_apps_folder(tempdir, source_hint=source_hint or f)
                     else:
                         success, _ = extract_gzip(filepath, tempdir)
-
                         if success:
-                            yield from iterate_archived_apps_folder(tempdir)
+                            yield from iterate_archived_apps_folder(tempdir, 
+                                source_hint=source_hint or f)
                         else:
                             logger.error('Could not process archive / image at {}'.format(filepath))
 

@@ -3,6 +3,7 @@ import gzip
 import zipfile
 import tarfile
 import os
+import misc.filesystem as fs
 
 resolved = lambda x: os.path.realpath(os.path.abspath(x))
 
@@ -58,6 +59,7 @@ def extract_gzip(path: str, to: str) -> (bool, str):
 		if n_written <= 0:
 			raise OSError('Did not write any output')
 
+		fs.rchmod(to, 0o755)
 		return True, temp
 	except OSError:
 		# Remove temporary file from filesystem if unpack fails. Otherwise,
@@ -94,6 +96,12 @@ def extract_zip(path: str, to: str) -> bool:
 		with zipfile.ZipFile(path, 'r') as archive:
 			# Extract contents to temporary directory
 			archive.extractall(to)
+			# Set filesystem access permissions to 755, otherwise it
+			# is possible for the clean up operation to fail due to permission
+			# errors. Since we do not execute the applications, changing permissions
+			# has no negative impact here.
+			fs.rchmod(to, 0o755)
+
 			return True
 	except zipfile.BadZipFile:
 		return False
@@ -110,6 +118,8 @@ def extract_tar(path: str, to: str) -> bool:
 	try:
 		with SafeTarFile(path) as tar:	
 			tar.extractall_safe(to)
+			# Necessary, see comment in extract_zip function
+			fs.rchmod(to, 0o755)
 
 			return True
 	except tarfile.ReadError:
