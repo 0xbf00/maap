@@ -183,9 +183,15 @@ class Bundle(abc.ABC):
             return self.binary
 
         linker_paths = self.linker_paths()
-        self.binary = Binary(self.executable_path(),
-                             executable_path=linker_paths[0],
-                             loader_path=linker_paths[1])
+        try:
+            self.binary = Binary(self.executable_path(),
+                                 executable_path=linker_paths[0],
+                                 loader_path=linker_paths[1])
+        except ValueError:
+            # The Binary() constructor throws an error when the supplied
+            # binary is not a Mach-O file (for example, if it is a shell script)
+            self.binary = None
+
         return self.binary
 
 
@@ -216,14 +222,8 @@ class Bundle(abc.ABC):
     def version(self) -> str:
         info_dict = self.info_dictionary()
 
-        version = None
-
-        if "CFBundleShortVersionString" in info_dict:
-            version = info_dict["CFBundleShortVersionString"]
-        elif "CFBundleVersion" in info_dict:
-            version = info_dict["CFBundleVersion"]
-
-        return version
+        return info_dict.get('CFBundleShortVersionString', None) or\
+               info_dict.get('CFBundleVersion', None)
 
     def has_entitlements(self):
         return self.entitlements() != dict()

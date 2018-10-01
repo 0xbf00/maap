@@ -60,11 +60,15 @@ class DependenciesExtractor(AbstractExtractor):
             self.log_error("Supplied app {} is not an application".format(app.filepath))
             return False
 
-        app_dependencies = app.executable().application_libraries()
+        app_base = os.path.realpath(app.filepath) + "/"
+
+        executable = app.executable()
+
+        app_dependencies = executable.application_libraries() if executable else []
         for dependency in app_dependencies:
             dependency_bundle = Bundle.from_binary(dependency)
             # Relative path component from the underlying app to the dependency.
-            dependency_rel = fs.path_remove_prefix(dependency, app.filepath + "/")
+            dependency_rel = fs.path_remove_prefix(dependency, app_base)
 
             dependency_infos = None
 
@@ -74,9 +78,9 @@ class DependenciesExtractor(AbstractExtractor):
             else:
                 # Try to instead use embedded information
                 # Note: extract_embedded_info returns None on failure
-                dependency_infos = common.extract_embedded_info(
-                    lief.parse(dependency)
-                )
+                dep_binary = lief.parse(dependency)
+                if dep_binary is not None:
+                    dependency_infos = common.extract_embedded_info(dep_binary)
 
             if dependency_infos:
                 # Record entry along with further information
