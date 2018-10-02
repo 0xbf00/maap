@@ -3,6 +3,7 @@ from bundle.bundle import Bundle
 from bundle.application import Application
 from misc import filesystem as fs
 from binary import common
+from binary import lief_extensions
 
 import os.path
 import lief
@@ -77,10 +78,9 @@ class DependenciesExtractor(AbstractExtractor):
                 dependency_infos = dependency_bundle.info_dictionary()
             else:
                 # Try to instead use embedded information
-                # Note: extract_embedded_info returns None on failure
-                dep_binary = lief.parse(dependency)
-                if dep_binary is not None:
-                    dependency_infos = common.extract_embedded_info(dep_binary)
+                if lief.is_macho(dependency):
+                    dependency_infos = common.extract_embedded_info(
+                        lief_extensions.macho_parse_quick(dependency))
 
             if dependency_infos:
                 # Record entry along with further information

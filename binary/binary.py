@@ -1,6 +1,7 @@
 import lief
 
 from .common import extract_rpaths, resolve_library_path, load_cmd_is_weak
+from .lief_extensions import macho_parse_quick
 
 import os
 import subprocess
@@ -25,7 +26,7 @@ class Binary:
                 raise ValueError("Executable has wrong format")
             self.filepath = filepath
             self.containing_folder = os.path.dirname(filepath)
-            self.parsed_binary = lief.parse(filepath)
+            self.parsed_binary = macho_parse_quick(filepath)
 
             # For more information about @loader_path and @executable_path,
             # check out https://www.mikeash.com/pyblog/friday-qa-2009-11-06-linking-and-install-names.html
