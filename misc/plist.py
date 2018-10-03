@@ -12,6 +12,24 @@ from extern.tools import tool_named
 SANITIZER = tool_named("plist_sanitizer")
 
 
+class tdict(dict):
+    """
+    Typed dict extension.
+    """
+    def typed_get(self, key, type, default=None):
+        """
+        Return the value for `key` if key is in the dictionary and is of type `type`,
+        else return `default`.
+        """
+        if key not in self:
+            return default
+
+        if not isinstance(self[key], type):
+            return default
+
+        return self[key]
+
+
 def parse_resilient_bytes(b: bytes) -> dict:
     """
     Parses a bytes object representing a PLIST file.
@@ -38,7 +56,7 @@ def parse_resilient(filepath: str) -> dict:
 
     try:
         with open(filepath, "rb") as plistFile:
-            return plistlib.load(plistFile)
+            return tdict(plistlib.load(plistFile))
     except:
         with tempfile.TemporaryDirectory() as tempdir:
             tempfile_out = os.path.join(tempdir, "Info-new.plist")
@@ -50,6 +68,6 @@ def parse_resilient(filepath: str) -> dict:
 
             with open(tempfile_out, "rb") as outfile:
                 try:
-                    return plistlib.load(outfile)
+                    return tdict(plistlib.load(outfile))
                 except:
                     raise ValueError("Unable to parse PLIST file.")

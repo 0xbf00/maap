@@ -130,11 +130,10 @@ class Bundle(abc.ABC):
         """Returns the bundle identifier of the current bundle.
 
         This assumes a bundle identifier exists!"""
-        assert(self.has_bundle_identifier())
-        return self.info_dictionary()["CFBundleIdentifier"]
+        return self.info_dictionary().typed_get('CFBundleIdentifier', str)
 
     def has_bundle_identifier(self) -> bool:
-        return "CFBundleIdentifier" in self.info_dictionary()
+        return self.info_dictionary().typed_get('CFBundleIdentifier', str) is not None
 
     def sub_bundles(self) -> List['Bundle']:
         """Search all subdirectories for other Bundles
@@ -222,8 +221,8 @@ class Bundle(abc.ABC):
     def version(self) -> str:
         info_dict = self.info_dictionary()
 
-        return info_dict.get('CFBundleShortVersionString', None) or\
-               info_dict.get('CFBundleVersion', None)
+        return info_dict.typed_get('CFBundleShortVersionString', str) or\
+               info_dict.typed_get('CFBundleVersion', str)
 
     def has_entitlements(self):
         return self.entitlements() != dict()
@@ -249,8 +248,6 @@ class Bundle(abc.ABC):
     def __str__(self):
         type = self.__class__.__name__
         version = "v" + (self.version() or 'UNKNOWN')
-        identifier = self.info_dictionary()["CFBundleIdentifier"] \
-            if "CFBundleIdentifier" in self.info_dictionary() \
-            else "unknown.bundle"
+        identifier = self.bundle_identifier() or 'unknown.bundle'
 
         return " - ".join([type, identifier, version])
