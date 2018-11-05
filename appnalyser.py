@@ -49,7 +49,7 @@ class AbstractAppChecker(abc.ABC):
     @classmethod
     @abc.abstractmethod
     def formatted_result(cls, result_dict):
-        """Output formatted results from previously a previously obtained check_app results
+        """Output formatted results from previously obtained check_app results
 
         Args:
             result_dict (dict): Result dictionary obtained from call to check_app.
