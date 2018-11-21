@@ -32,7 +32,10 @@ import shutil
 import functools
 import argparse
 import signal
+import sys
 import tempfile
+
+from termcolor import colored
 
 import extractors.base
 
@@ -152,6 +155,23 @@ def process_app(app_path, info_extractors, logger, output, source_hint: str=None
         )
 
 
+def install_app(app_path: str, logger, output: str):
+    """Install an app from the `app_path` into the `output` directory."""
+
+    app = Bundle.make(app_path)
+    output_folder = os.path.join(folder_for_app(output, app), os.path.basename(app_path))
+
+    try:
+        shutil.copytree(app_path, output_folder, symlinks=True)
+    except FileExistsError:
+        logger.error("Application already exists: {}. Skipping.".format(output_folder))
+        print('\r[' + colored('skip', 'yellow'))
+        return
+
+    logger.info("Installed application: {}".format(output_folder))
+    print('\r[' + colored(' ok ', 'green'))
+
+
 def iterate_apps_folder(input, source_hint=None):
     """
     Iterate all .app bundles in the specified folder.
@@ -229,13 +249,24 @@ def main():
                         help='Output directory: This directory shall also be passed to this program to update an existing output folder.')
     parser.add_argument('--all-apps', dest='all_apps', default=False, action='store_true',
                         help='Analyse all apps. By default, only Mac AppStore apps are analysed.')
+    parser.add_argument('--install-only', default=False, action='store_true',
+                        help='''Install archived applications into the output directory.
+                                This option only works with archive folders.''')
 
     args = parser.parse_args()
 
+    if args.type != 'archive_folder' and args.install_only:
+        print("Option '--install-only' is only supported for archive folders.", file=sys.stderr)
+        exit(1)
+
     exit_watcher = SignalIntelligence()
 
-    print("[+] Analysing apps at \"{}\"".format(args.input))
-    print("[+] Press Ctrl+C to cancel analysis (can later be resumed)\n")
+    if args.install_only:
+        print("[+] Installing apps from \"{}\" to \"{}\"".format(args.input, args.output))
+        print("[+] Press Ctrl+C to cancel installation\n")
+    else:
+        print("[+] Analysing apps at \"{}\"".format(args.input))
+        print("[+] Press Ctrl+C to cancel analysis (can later be resumed)\n")
 
     if args.type == 'app_folder':
         app_candidates = iterate_apps_folder(args.input)
@@ -252,16 +283,21 @@ def main():
             continue
 
         bundle = Bundle.make(path)
-        if not bundle.is_mas_app() and not args.all_apps:
+        if not bundle.is_mas_app() and not args.all_apps and not args.install_only:
             continue
 
-        print('[+] Processing {}'.format(path))
-
-        process_app(app_path=path,
-                    info_extractors=info_extractors,
-                    logger=logger,
-                    output=args.output,
-                    source_hint=hint)
+        if args.install_only:
+            print('[    ] Installing {}'.format(path), end='')
+            install_app(app_path=path,
+                        logger=logger,
+                        output=args.output)
+        else:
+            print('[+] Processing {}'.format(path))
+            process_app(app_path=path,
+                        info_extractors=info_extractors,
+                        logger=logger,
+                        output=args.output,
+                        source_hint=hint)
 
     logger.info("appxtractor stopping")
 
