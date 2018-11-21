@@ -116,7 +116,7 @@ def process_app(app_path, info_extractors, logger, output, source_hint: str=None
     """Process an app using the supplied `info_extractors`
 
     Log potentially relevant information to `logger` and return results
-    at `output`. If supplied, the `origin_hin` will be written to
+    at `output`. If supplied, the `source_hint` will be written to
     `output/source`
     """
 
