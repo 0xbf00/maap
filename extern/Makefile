@@ -1,4 +1,4 @@
-PROGRAMS = xpc_vuln_checker plist_sanitizer jtool
+PROGRAMS = xpc_vuln_checker plist_sanitizer jtool sandbox_status
 
 all: $(PROGRAMS)
 
@@ -12,6 +12,9 @@ jtool:
 	curl -O http://www.newosxbook.com/tools/jtool.tar
 	tar -xzf jtool.tar jtool
 	rm jtool.tar
+
+sandbox_status: sandbox_status.c apple_sandbox.h
+	$(CC) -o sandbox_status sandbox_status.c -std=c11
 
 clean:
 	rm $(PROGRAMS)
