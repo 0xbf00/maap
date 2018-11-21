@@ -82,27 +82,30 @@ class AppSandboxStatusChecker(AbstractAppChecker):
     def formatted_result(cls, result_dict):
         static_sandbox  = result_dict['static']
         dynamic_sandbox = result_dict['dynamic']
-        if static_sandbox and dynamic_sandbox:
-            return termcolor.colored("App Sandbox enabled and active.", color = COLOR_POSITIVE)
-        if static_sandbox and not dynamic_sandbox:
-            return termcolor.colored("App Sandbox enabled but not active.", color = COLOR_NEGATIVE)
-        if not static_sandbox and not dynamic_sandbox:
-            return termcolor.colored("App Sandbox not enabled and not active.", color = COLOR_NEUTRAL)
-        if not static_sandbox and dynamic_sandbox:
-            # This is a weird case.
-            return termcolor.colored("App Sandbox not enabled but still active.", color = COLOR_NEUTRAL)
+        sandbox_status = result_dict['status']
+        if static_sandbox and (dynamic_sandbox or sandbox_status == 1):
+            return termcolor.colored("App Sandbox enabled and active (status {}).".format(sandbox_status), color = COLOR_POSITIVE)
+        if static_sandbox and not (dynamic_sandbox or sandbox_status == 1):
+            return termcolor.colored("App Sandbox enabled but not active (status {}).".format(sandbox_status), color = COLOR_NEGATIVE)
+        if not static_sandbox and not (dynamic_sandbox or sandbox_status == 1):
+            return termcolor.colored("App Sandbox not enabled and not active (status {}).".format(sandbox_status), color = COLOR_NEUTRAL)
+        if not static_sandbox and (dynamic_sandbox or sandbox_status == 1):
+            # This is a weird case for MAS applications.
+            return termcolor.colored("App Sandbox not enabled but still active (status {}).".format(sandbox_status), color = COLOR_NEUTRAL)
 
     @classmethod
     def check_app(cls, app_bundle : Bundle):
         try:
             static_sandbox = app_bundle.is_sandboxed()
             dynamic_sandbox = app_utils.init_sandbox(app_bundle, logger)
-            if not static_sandbox and dynamic_sandbox:
+            sandbox_status = app_utils.sandbox_status(app_bundle, logger)
+            if not static_sandbox and (dynamic_sandbox or sandbox_status == 1):
                 logger.info("App Sandbox active though not enabled for app {}".format(app_bundle.filepath))
 
             return (True, {
                 'static': static_sandbox,
-                'dynamic': dynamic_sandbox
+                'dynamic': dynamic_sandbox,
+                'status': sandbox_status,
             })
         except:
             return False, dict()

@@ -2,6 +2,10 @@
 import os
 import subprocess
 import logging
+import time
+import re
+
+from typing import Optional
 
 from bundle.bundle import Bundle, InvalidBundle
 from binary.binary import Binary
@@ -145,6 +149,38 @@ def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisatio
         return False
 
     return True
+
+
+def sandbox_status(app_bundle: Bundle, logger: logging.Logger) -> Optional[int]:
+    process = subprocess.Popen([app_bundle.executable_path()],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
+
+    # Sandbox initialisation should be almost instant. If the application is still
+    # running after a couple of seconds, the sandbox failed to initialise or is
+    # not enabled at all.
+    # We use 10 seconds as an arbitrary cutoff time.
+
+    time.sleep(10)
+
+    pid = str(process.pid)
+
+    sb_status = subprocess.run([tool_named("sandbox_status"), pid],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.DEVNULL)
+
+    process.kill()
+
+    rx = re.compile(r'^Sandbox status for PID {} is (\d+)$'.format(pid))
+    m = rx.match(sb_status.stdout.decode().strip())
+    if m:
+        return int(m.group(1))
+
+    logger.error("`sandbox_status` did not return a status for executable at {}. Skipping.".format(
+        app_bundle.executable_path())
+    )
+
+    return None
 
 
 def run_process(executable, duration, stdout_file=subprocess.DEVNULL, stderr_file=subprocess.DEVNULL) -> int:
