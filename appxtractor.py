@@ -167,6 +167,10 @@ def install_app(app_path: str, logger, output: str):
         logger.error("Application already exists: {}. Skipping.".format(output_folder))
         print('\r[' + colored('skip', 'yellow'))
         return
+    except e:
+        logger.error("Could not install application: {}".format(output_folder))
+        print('\r[' + colored('err ', 'red'))
+        return
 
     logger.info("Installed application: {}".format(output_folder))
     print('\r[' + colored(' ok ', 'green'))
