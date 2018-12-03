@@ -62,7 +62,7 @@ def container_for_app(app):
     # Also verify that the metadata file is present, else the container is invalid and of
     # no use to other code
     container_metadata = os.path.join(container_path, "Container.plist")
-    if not os.path.exists(container_path):
+    if not os.path.exists(container_metadata):
         return None
 
     return container_path
