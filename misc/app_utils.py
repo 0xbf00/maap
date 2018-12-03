@@ -52,7 +52,7 @@ def container_for_app(app):
         except InvalidBundle:
             return None
 
-    bid = app_bundle.bundle_identifier()
+    bid = app_bundle.bundle_identifier(normalized=True)
 
     # Verify the container exists.
     container_path = os.path.join(os.path.expanduser("~/Library/Containers/"), bid)

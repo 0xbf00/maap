@@ -114,6 +114,18 @@ class Bundle(abc.ABC):
         return filepath
 
     @staticmethod
+    def normalize_bundle_identifier(bundleId: str) -> str:
+        # See https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/understanding_utis/understand_utis_conc/understand_utis_conc.html#//apple_ref/doc/uid/TP40001319-CH202-CHDHIJDE
+        allowed_ascii_characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
+        normalized = ""
+        for character in bundleId:
+            if character in allowed_ascii_characters or ord(character) > 0x7f:
+                normalized += character
+            else:
+                normalized += "-"
+        return normalized
+
+    @staticmethod
     def is_bundle(filepath : str) -> bool:
         normalized_path = Bundle.normalize_path(filepath)
         bundle_type = BundleType.type_for_bundle(normalized_path)
@@ -126,11 +138,17 @@ class Bundle(abc.ABC):
                 # print("Bundle \"{}\" could not be read, despite seemingly being a bundle.".format(normalized_path))
             return False
 
-    def bundle_identifier(self) -> str:
+    def bundle_identifier(self, normalized: bool = False) -> str:
         """Returns the bundle identifier of the current bundle.
 
         This assumes a bundle identifier exists!"""
-        return self.info_dictionary().typed_get('CFBundleIdentifier', str)
+        bundleId = self.info_dictionary().typed_get('CFBundleIdentifier', str)
+
+        if normalized:
+            return Bundle.normalize_bundle_identifier(bundleId)
+
+        return bundleId
+
 
     def has_bundle_identifier(self) -> bool:
         return self.info_dictionary().typed_get('CFBundleIdentifier', str) is not None
