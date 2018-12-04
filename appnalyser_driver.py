@@ -36,7 +36,8 @@ def iterate_applications(directory: str) -> Iterator[str]:
 
 
 def appnalyse(application_directory: str, applications_directory: str, root_output_directory: str, logger: logging.Logger) -> None:
-    print("[    ] Analysing {}".format(application_directory), end='')
+    print("[    ] Analysing {}".format(application_directory))
+    reset_cursor = "\r\033[1A["
 
     output_directory = os.path.join(
         root_output_directory,
@@ -47,7 +48,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
     # Skip application if we already obtained results
     if os.path.exists(output_fn):
         logger.warning("App already appnalysed: {}. Skipping.".format(application_directory))
-        print("\r[" + colored("skip", 'yellow'))
+        print(reset_cursor + colored("skip", 'yellow'))
         return
 
     # Run appnalyser for the given application
@@ -62,7 +63,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
     except subprocess.TimeoutExpired:
         appnalyser.kill()
         logger.error("Timed out: {}".format(application_directory))
-        print("\r[" + colored("err", 'red'))
+        print(reset_cursor + colored("err", 'red'))
         return
 
     stdout, stderr = appnalyser.communicate()
@@ -75,7 +76,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
                 stderr.decode(),
             )
         )
-        print("\r[" + colored("err ", 'red'))
+        print(reset_cursor + colored("err ", 'red'))
         return
 
     try:
@@ -87,7 +88,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
                 stdout.decode(),
             )
         )
-        print("\r[" + colored("err ", 'red'))
+        print(reset_cursor + colored("err ", 'red'))
         return
 
     # Store results
@@ -95,7 +96,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
     with open(output_fn, 'wb') as fp:
         fp.write(stdout)
 
-    print("\r[" + colored(" ok", 'green'))
+    print(reset_cursor + colored(" ok", 'green'))
     logger.info("Successfully appnalysed {}".format(application_directory))
 
 
