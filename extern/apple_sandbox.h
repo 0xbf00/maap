@@ -37,6 +37,8 @@ extern char *sandbox_extension_issue_file(const char *ext, const char *path, int
 extern int sandbox_extension_consume(const char *token);
 extern int sandbox_extension_release(const char *token);
 
+extern int sandbox_container_path_for_pid(pid_t pid, char* buf, int buf_size);
+
 #ifdef __cplusplus
 }
 #endif

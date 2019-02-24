@@ -1,4 +1,4 @@
-PROGRAMS = xpc_vuln_checker plist_sanitizer jtool sandbox_check sandbox_status
+PROGRAMS = xpc_vuln_checker plist_sanitizer jtool sandbox_check sandbox_status sandbox_container_path_for_pid
 
 all: $(PROGRAMS)
 
@@ -18,6 +18,9 @@ sandbox_check: sandbox_check.c
 
 sandbox_status: sandbox_status.c apple_sandbox.h
 	$(CC) -o sandbox_status sandbox_status.c -std=c11
+
+sandbox_container_path_for_pid: sandbox_container_path_for_pid.c apple_sandbox.h
+	$(CC) -o sandbox_container_path_for_pid sandbox_container_path_for_pid.c -std=c11
 
 clean:
 	rm $(PROGRAMS)

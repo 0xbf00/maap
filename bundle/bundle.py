@@ -8,6 +8,7 @@ import sys
 from typing import List
 from misc import plist as plist
 from misc import filesystem as fs
+from misc.utils import normalize_bundle_identifier
 
 from .types import BundleType
 
@@ -113,6 +114,7 @@ class Bundle(abc.ABC):
 
         return filepath
 
+
     @staticmethod
     def is_bundle(filepath : str) -> bool:
         normalized_path = Bundle.normalize_path(filepath)
@@ -126,11 +128,17 @@ class Bundle(abc.ABC):
                 # print("Bundle \"{}\" could not be read, despite seemingly being a bundle.".format(normalized_path))
             return False
 
-    def bundle_identifier(self) -> str:
+    def bundle_identifier(self, normalized: bool = False) -> str:
         """Returns the bundle identifier of the current bundle.
 
         This assumes a bundle identifier exists!"""
-        return self.info_dictionary().typed_get('CFBundleIdentifier', str)
+        bundleId = self.info_dictionary().typed_get('CFBundleIdentifier', str)
+
+        if normalized:
+            return normalize_bundle_identifier(bundleId)
+
+        return bundleId
+
 
     def has_bundle_identifier(self) -> bool:
         return self.info_dictionary().typed_get('CFBundleIdentifier', str) is not None

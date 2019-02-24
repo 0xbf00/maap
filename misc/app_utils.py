@@ -52,7 +52,7 @@ def container_for_app(app):
         except InvalidBundle:
             return None
 
-    bid = app_bundle.bundle_identifier()
+    bid = app_bundle.bundle_identifier(normalized=True)
 
     # Verify the container exists.
     container_path = os.path.join(os.path.expanduser("~/Library/Containers/"), bid)
@@ -62,7 +62,7 @@ def container_for_app(app):
     # Also verify that the metadata file is present, else the container is invalid and of
     # no use to other code
     container_metadata = os.path.join(container_path, "Container.plist")
-    if not os.path.exists(container_path):
+    if not os.path.exists(container_metadata):
         return None
 
     return container_path
@@ -164,6 +164,10 @@ def sandbox_status(app_bundle: Bundle, logger: logging.Logger) -> Optional[int]:
     time.sleep(10)
 
     pid = str(process.pid)
+
+    if process.poll() is not None:
+        logger.error("Process terminated early: {}".format(app_bundle.executable_path()))
+        return None
 
     sb_status = subprocess.run([tool_named("sandbox_status"), pid],
                                stdout=subprocess.PIPE,
