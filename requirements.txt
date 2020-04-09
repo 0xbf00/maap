@@ -1,0 +1,4 @@
+dmglib
+requests
+termcolor
+lief

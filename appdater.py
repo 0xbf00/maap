@@ -19,7 +19,7 @@ logger = create_logger('appdater')
 
 
 def infos_from_itunes_dump(dump_path):
-    """Given a Mac App Store dump in jsonlines format (-> mas_crawl_manager), extracts the information
+    """Given a Mac App Store dump in jsonlines format (-> mas-crawl), extracts the information
     as a dictionary mapping bundleId to whole entry."""
     assert(os.path.isfile(dump_path))
 

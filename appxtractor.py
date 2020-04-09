@@ -42,7 +42,7 @@ import extractors.base
 from bundle.bundle import Bundle
 from misc.logger import create_logger
 from misc.archives import extract_zip, extract_tar, extract_gzip
-import misc.dmglib as dmglib
+import dmglib
 
 
 logger = create_logger('appxtractor')
@@ -208,8 +208,8 @@ def iterate_archived_apps_folder(input, source_hint=None):
             filepath = os.path.join(root, f)
 
             # Try to mount as dmg
-            if      dmglib.DiskImage.is_valid(filepath) and\
-                not dmglib.DiskImage.is_encrypted(filepath):
+            if      dmglib.dmg_is_valid(filepath) and\
+                not dmglib.dmg_is_encrypted(filepath):
                 try:
                     with dmglib.attachedDiskImage(filepath) as mount_points:
                         for point in mount_points:
