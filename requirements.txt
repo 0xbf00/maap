@@ -2,3 +2,4 @@ dmglib
 requests
 termcolor
 lief
+jsonlines
