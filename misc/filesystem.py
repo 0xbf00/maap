@@ -58,7 +58,7 @@ def project_root():
     """
     Returns root directory of project
     """
-    return os.path.realpath(os.path.join(os.path.basename(__file__), "../.."))
+    return os.path.realpath(os.path.join(os.path.basename(__file__), ".."))
 
 
 def project_path(relative_path = ''):
