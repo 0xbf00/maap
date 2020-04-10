@@ -15,6 +15,7 @@ class TestBinary(unittest.TestCase):
         with self.assertRaises(ValueError):
             loaded_bin = bin.Binary("/Applications/Calculator.app/Contents/MacO/Calculator")
 
+    # Note: This test fails currently because iTunes was changed.
     def test_application_libraries(self):
         # Application libraries are those linked libraries
         # that are part of the application bundle.

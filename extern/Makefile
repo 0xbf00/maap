@@ -1,4 +1,4 @@
-PROGRAMS = xpc_vuln_checker plist_sanitizer jtool sandbox_check sandbox_status sandbox_container_path_for_pid
+PROGRAMS = xpc_vuln_checker plist_sanitizer jtool simbple sandbox_check sandbox_status sandbox_container_path_for_pid
 
 all: $(PROGRAMS)
 
@@ -12,6 +12,10 @@ jtool:
 	curl -O http://www.newosxbook.com/tools/jtool.tar
 	tar -xzf jtool.tar jtool
 	rm jtool.tar
+
+simbple:
+	curl -L -O https://github.com/0xbf00/simbple/releases/download/v0.9-catalina/simbple
+	chmod +x simbple
 
 sandbox_check: sandbox_check.c
 	$(CC) -o sandbox_check sandbox_check.c

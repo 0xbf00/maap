@@ -4,7 +4,7 @@ import logging
 import os
 from .filesystem import project_path
 
-LOGGING_DIRECTORY = project_path("mas_tools/logs/")
+LOGGING_DIRECTORY = project_path("logs/")
 if not os.path.exists(LOGGING_DIRECTORY):
     os.mkdir(LOGGING_DIRECTORY)
 

@@ -47,6 +47,7 @@ class TestBundle(unittest.TestCase):
         self.assertEqual(Bundle.normalize_path("/Applications/Xcode.app"), "/Applications/Xcode.app")
         self.assertEqual(Bundle.normalize_path("/Applications/Xcode.app/Test"), "/Applications/Xcode.app")
 
+    # Note: This test fails because iTunes changed
     def test_sub_frameworks(self):
         app = Bundle.make("/Applications/iTunes.app")
         sub_frameworks = app.sub_frameworks()
@@ -68,6 +69,7 @@ class TestBundle(unittest.TestCase):
         for path in required_paths:
             self.assertIn(path, sub_bundle_paths)
 
+    # Note: This test currently fails, because iTunes does not exist anymore.
     def test_bundle_from_binary(self):
         # For single-file utility, this function should return None, because the file is not
         # part of any bundle

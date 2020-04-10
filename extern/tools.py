@@ -26,8 +26,7 @@ def call_sbpl(container, result_format = 'scheme', patch = False):
                   forcing the sandbox to log every operation
     :return: Compiled sandbox profile as bytes
     """
-    sbpl_base_dir = project_path("simbple")
-    sbpl_tool = os.path.join(sbpl_base_dir, "build/bin/simbple")
+    sbpl_tool = tool_named("simbple")
 
     if result_format != "scheme" and result_format != "json":
         raise ValueError("Invalid format specified.")
@@ -38,7 +37,7 @@ def call_sbpl(container, result_format = 'scheme', patch = False):
         if patch:
             cmd.append("--patch")
 
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, cwd=sbpl_base_dir)
+        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
         return result
     except subprocess.CalledProcessError:
         return None
