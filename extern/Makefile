@@ -2,6 +2,9 @@ PROGRAMS = xpc_vuln_checker plist_sanitizer jtool simbple sandbox_check sandbox_
 
 all: $(PROGRAMS)
 
+compile_sb: compile_sb.c
+	$(CC) -o compile_sb compile_sb.c -lsandbox
+
 xpc_vuln_checker: xpc_vuln_checker.c
 	$(CC) -o xpc_vuln_checker xpc_vuln_checker.c
 
