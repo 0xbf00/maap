@@ -4,13 +4,32 @@ import subprocess
 from misc.filesystem import project_path
 
 
+def _invoke_tool(filepath, *args, **kwargs):
+    if not os.path.exists(filepath):
+        raise FileNotFoundError
+
+    cmd = [filepath, *args]
+    try:
+        kwargs.update({
+            'stderr': subprocess.DEVNULL
+        })
+        result = subprocess.check_output(cmd, **kwargs)
+        return (0, result)
+    except subprocess.CalledProcessError as err:
+        return (err.returncode, err.output)
+
+
 def tool_named(name):
-    """Returns the full filepath to the specified tool.
-    Raises an exception if tool does not exist."""
+    """
+    Returns a function object that can be used to directly invoke the tool's CLI.
+
+    This is handled transparently through the use of the subprocess library.
+    The returned function will
+        - Raise the FileNotFoundError if the tool does not exist
+        - Return a tuple (exit_code, stdout_output) in all other cases
+    """
     tool_path = os.path.join(os.path.dirname(__file__), name)
-    if not os.path.exists(tool_path):
-        raise ValueError("Tool does not exist.")
-    return tool_path
+    return lambda *args, **kwargs: _invoke_tool(tool_path, *args, **kwargs)
 
 
 def call_sbpl(container, result_format = 'scheme', patch = False):
@@ -26,18 +45,18 @@ def call_sbpl(container, result_format = 'scheme', patch = False):
                   forcing the sandbox to log every operation
     :return: Compiled sandbox profile as bytes
     """
-    sbpl_tool = tool_named("simbple")
+    simbple_func = tool_named("simbple")
 
     if result_format != "scheme" and result_format != "json":
         raise ValueError("Invalid format specified.")
 
-    try:
-        cmd = [sbpl_tool, "--" + result_format, os.path.join(container, "Container.plist")]
+    simbple_args = [f"--{result_format}", os.path.join(container, "Container.plist")]
+    if patch:
+        simbple_args.append("--patch")
 
-        if patch:
-            cmd.append("--patch")
+    exit_code, output = simbple_func(*simbple_args)
 
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
-        return result
-    except subprocess.CalledProcessError:
-        return None
+    if exit_code != 0:
+        return
+    
+    return output

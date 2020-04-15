@@ -57,3 +57,8 @@ class TestBinary(unittest.TestCase):
 
         # So far, /bin/ls contains no entitlements
         self.assertEqual(bin.Binary.get_entitlements("/bin/ls"), dict())
+
+        # Test raw entitlements
+        raw_entitlements = bin.Binary.get_entitlements("/Applications/Calculator.app/Contents/MacOS/Calculator", raw=True)
+        self.assertTrue(type(raw_entitlements) == bytes)
+        self.assertTrue(len(raw_entitlements) > 0)

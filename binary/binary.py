@@ -48,23 +48,17 @@ class Binary:
         """
         jtool = tool_named("jtool")
 
-        with tempfile.NamedTemporaryFile() as ent_file:
-            env = os.environ.copy()
-            env["ARCH"] = "x86_64"
+        env = os.environ.copy()
+        env['ARCH'] = 'x86_64'
 
-            return_value = subprocess.run([jtool, "--ent", filepath],
-                                      stdin=subprocess.DEVNULL, stdout=ent_file,
-                                      stderr=subprocess.DEVNULL, env = env)
-
-            if return_value.returncode != 0:
-                return dict()
-            else:
-                if raw:
-                    # Return raw bytes to caller.
-                    ent_file.seek(0)
-                    return ent_file.read()
-
-                return plist.parse_resilient(ent_file.name)
+        exit_code, results = jtool("--ent", filepath, env=env)
+        if exit_code != 0:
+            return dict()
+        
+        if raw:
+            return results
+        else:
+            return plist.parse_resilient_bytes(results)
 
     def application_libraries(self):
         """

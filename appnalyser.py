@@ -26,7 +26,6 @@ import termcolor
 from typing import List
 import argparse
 import abc
-import subprocess
 import json
 
 logger = logging_utils.create_logger('appnalyser')
@@ -166,12 +165,12 @@ class AppSandboxCapabilitiesChecker(AbstractAppChecker):
             return True # Unsandboxed apps may do whatever they want.
 
         sandbox_ruleset = app_utils.get_sandbox_rules(app_bundle)
-        response = subprocess.run([sandbox_check, operation_name], input=sandbox_ruleset)
+        returncode, _ = sandbox_check(operation_name, input=sandbox_ruleset)
 
         # Capability is...
-        if response.returncode == 0: # allowed
+        if returncode == 0: # allowed
             return True
-        elif response.returncode == 1: # not allowed
+        elif returncode == 1: # not allowed
             return False
         else: # Some kind of error occurred.
             raise RuntimeError("Capability could not be checked.")

@@ -9,8 +9,6 @@ import subprocess
 import plistlib
 from extern.tools import tool_named
 
-SANITIZER = tool_named("plist_sanitizer")
-
 
 class tdict(dict):
     """
@@ -37,11 +35,19 @@ def parse_resilient_bytes(b: bytes) -> dict:
     :return: Parsed dictionary.
     :raises ValueError on failure
     """
-    with tempfile.NamedTemporaryFile(mode='wb') as outfile:
-        outfile.write(b)
-        outfile.flush()
+    try:
+        return tdict(plistlib.loads(b))
+    except:
+        plist_sanitizer = tool_named("plist_sanitizer")
+        returncode, results = plist_sanitizer(input=b)
 
-        return parse_resilient(outfile.name)
+        if returncode != 0:
+            raise ValueError("Unable to correct PLIST file.")
+        else:
+            try:
+                return tdict(plistlib.loads(results))
+            except:
+                raise ValueError("Unable to parse PLIST file.")
 
 
 def parse_resilient(filepath: str) -> dict:
@@ -54,20 +60,5 @@ def parse_resilient(filepath: str) -> dict:
     if not os.path.exists(filepath):
         raise ValueError("File does not exist.")
 
-    try:
-        with open(filepath, "rb") as plistFile:
-            return tdict(plistlib.load(plistFile))
-    except:
-        with tempfile.TemporaryDirectory() as tempdir:
-            tempfile_out = os.path.join(tempdir, "Info-new.plist")
-            return_value = subprocess.run([SANITIZER, filepath, tempfile_out],
-                                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                                          stderr=subprocess.DEVNULL)
-            if return_value.returncode != 0:
-                raise ValueError("Unable to correct PLIST file.")
-
-            with open(tempfile_out, "rb") as outfile:
-                try:
-                    return tdict(plistlib.load(outfile))
-                except:
-                    raise ValueError("Unable to parse PLIST file.")
+    with open(filepath, "rb") as plistFile:
+        return parse_resilient_bytes(plistFile.read())

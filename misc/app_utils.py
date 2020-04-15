@@ -87,9 +87,9 @@ def _entitlements_can_be_parsed(app_bundle: Bundle) -> bool:
     raw_entitlements = Binary.get_entitlements(exe_path, raw=True)
 
     # Call the local xpc_vuln_checker program that does the actual checking.
-    return_value = subprocess.run([tool_named("xpc_vuln_checker")], input=raw_entitlements)
+    exit_code, _ = tool_named("xpc_vuln_checker")(input=raw_entitlements)
 
-    return return_value.returncode != 1
+    return exit_code != 1
 
 
 def init_sandbox(app_bundle: Bundle, logger: logging.Logger, force_initialisation: bool = False) -> bool:
@@ -169,14 +169,12 @@ def sandbox_status(app_bundle: Bundle, logger: logging.Logger) -> Optional[int]:
         logger.error("Process terminated early: {}".format(app_bundle.executable_path()))
         return None
 
-    sb_status = subprocess.run([tool_named("sandbox_status"), pid],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.DEVNULL)
+    sb_status = tool_named("sandbox_status")(pid)
 
     process.kill()
 
     rx = re.compile(r'^Sandbox status for PID {} is (\d+)$'.format(pid))
-    m = rx.match(sb_status.stdout.decode().strip())
+    m = rx.match(sb_status.decode().strip())
     if m:
         return int(m.group(1))
 

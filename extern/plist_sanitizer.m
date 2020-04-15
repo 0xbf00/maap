@@ -14,24 +14,21 @@
 
 int main(int argc, char *argv[])
 {
-	if (argc != 2 && argc != 3) {
-		LOG("Usage: %s plist [outfile]\n", argv[0]);
+	if (argc != 1) {
+		LOG("This program reads its input from stdin and writes its output to stdout.");
+		LOG("The return code indicates whether the operation was successful (0) or not.");
 		return EXIT_FAILURE;
 	}
 
-	char * const plistFile = argv[1];
-	NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile: [NSString stringWithUTF8String: plistFile]];
+	NSDictionary *dict = [NSDictionary dictionaryWithContentsOfFile: @"/dev/stdin"];
 	if (!dict) {
-		LOG("Failed to open input file.\nEnsure you have read permissions to the input directory");
+		LOG("Failed to read / decode input.");
 		return EXIT_FAILURE;
 	}
 
-	if (argc == 3) {
-		char * const outFile = argv[2];
-		if (YES != [dict writeToFile: [NSString stringWithUTF8String: outFile] atomically: YES]) {
-			LOG("Failed to write output file to disk.\nEnsure you have write permissions to the output directory.");
-			return EXIT_FAILURE;
-		}
+	if (YES != [dict writeToFile: @"/dev/stdout" atomically: YES]) {
+		LOG("Failed to write output to stdout.");
+		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
