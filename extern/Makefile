@@ -1,4 +1,4 @@
-PROGRAMS = xpc_vuln_checker plist_sanitizer jtool simbple sandbox_check sandbox_status sandbox_container_path_for_pid
+PROGRAMS = xpc_vuln_checker plist_sanitizer jtool simbple sandbox_check sandbox_status sandbox_container_path_for_pid compile_sb
 
 all: $(PROGRAMS)
 
