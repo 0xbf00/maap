@@ -138,3 +138,13 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Binary files in extern/
+extern/compile_sb
+extern/jtool
+extern/plist_sanitizer
+extern/sandbox_check
+extern/sandbox_container_path_for_pid
+extern/sandbox_status
+extern/simbple
+extern/xpc_vuln_checker
