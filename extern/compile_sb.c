@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	fclose(outf);
 	sandbox_free_profile(compiled_profile);
 
-	printf("[+] compiled sandbox profile written to: %s\n", outname);
+	fprintf(stderr, "[+] compiled sandbox profile written to: %s\n", outname);
 
 	return 0;
 }
