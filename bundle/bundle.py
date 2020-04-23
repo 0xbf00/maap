@@ -3,7 +3,6 @@ import pathlib
 
 # For comfortable directory walking
 import os
-import sys
 
 from typing import List
 from misc import plist as plist
