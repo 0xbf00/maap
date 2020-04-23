@@ -169,7 +169,9 @@ def sandbox_status(app_bundle: Bundle, logger: logging.Logger) -> Optional[int]:
         logger.error("Process terminated early: {}".format(app_bundle.executable_path()))
         return None
 
-    sb_status = tool_named("sandbox_status")(pid)
+    sandbox_status = tool_named("sandbox_status")
+
+    returncode, sb_status = sandbox_status(pid)
 
     process.kill()
 
