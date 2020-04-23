@@ -41,7 +41,7 @@ def appnalyse(application_directory: str, applications_directory: str, root_outp
 
     output_directory = os.path.join(
         root_output_directory,
-        os.path.relpath(application_directory, applications_directory),
+        os.path.relpath(application_directory, applications_directory)[:-4],
     )
     output_fn = os.path.join(output_directory, 'appnalyse_results.json')
 
