@@ -1,8 +1,6 @@
 import os.path
 import subprocess
 
-from misc.filesystem import project_path
-
 
 def _invoke_tool(filepath, *args, **kwargs):
     if not os.path.exists(filepath):
