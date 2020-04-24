@@ -10,7 +10,8 @@ from argparse import ArgumentParser
 from termcolor import colored
 from typing import Iterator
 
-from appxtractor import SignalIntelligence
+from appxtractor import folder_for_app, SignalIntelligence
+from bundle.bundle import Bundle
 from misc.logger import create_logger
 
 
@@ -35,14 +36,13 @@ def iterate_applications(directory: str) -> Iterator[str]:
             yield candidate
 
 
-def appnalyse(application_directory: str, applications_directory: str, root_output_directory: str, logger: logging.Logger) -> None:
+def appnalyse(application_directory: str, root_output_directory: str, logger: logging.Logger) -> None:
     print("[    ] Analysing {}".format(application_directory))
     reset_cursor = "\r\033[1A["
 
-    output_directory = os.path.join(
-        root_output_directory,
-        os.path.relpath(application_directory, applications_directory)[:-4],
-    )
+    app = Bundle.make(application_directory)
+    output_directory = folder_for_app(root_output_directory, app)
+
     output_fn = os.path.join(output_directory, 'appnalyse_results.json')
 
     # Skip application if we already obtained results
@@ -131,7 +131,7 @@ def main() -> None:
         if exit_watcher.should_exit:
             break
 
-        appnalyse(application_directory, applications_directory, output_directory, logger)
+        appnalyse(application_directory, output_directory, logger)
 
     logger.info("appnalyser_driver stopping")
 
