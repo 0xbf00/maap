@@ -30,7 +30,7 @@ def tool_named(name):
     return lambda *args, **kwargs: _invoke_tool(tool_path, *args, **kwargs)
 
 
-def call_sbpl(container, result_format = 'scheme', patch = False):
+def call_sbpl(container, result_format = 'scheme', patch = False, verify = False):
     """
     Uses custom sbpl interpreter to compile metadata for a given container.
     Optionally also supports patching the profile (adding report modifiers to
@@ -51,6 +51,8 @@ def call_sbpl(container, result_format = 'scheme', patch = False):
     simbple_args = [f"--{result_format}", os.path.join(container, "Container.plist")]
     if patch:
         simbple_args.append("--patch")
+    if verify:
+        simbple_args.append("--verify")
 
     exit_code, output = simbple_func(*simbple_args)
 
