@@ -54,6 +54,8 @@ class Driver(abc.ABC):
             app = Bundle.make(app_dir)
             app_out_dir = folder_for_app(out_dir, app)
 
+            os.makedirs(app_out_dir, exist_ok=True)
+
             print(f"[    ] Analysing {app.filepath}")
             reset_cursor = "\r\033[1A["
             result = self.analyse(app, app_out_dir)
