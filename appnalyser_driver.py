@@ -66,6 +66,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
+        '-t', '--type',
+        choices=driver.Selection.choices(),
+        default=driver.Selection.ALL,
+        help="Only analyse applications specified by type. (default 'all')",
+    )
+
+    parser.add_argument(
         'applications',
         help="""
             Path to the directory, where applications are installed. This
@@ -78,12 +85,13 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    selection = driver.Selection(args.type)
 
     apps_dir = os.path.expanduser(args.applications)
     out_dir = os.path.expanduser(args.output)
 
-    driver = AppnalyseDriver()
-    driver.run(apps_dir, out_dir)
+    appnalyse = AppnalyseDriver()
+    appnalyse.run(apps_dir, out_dir, selection)
 
 
 if __name__ == '__main__':

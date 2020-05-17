@@ -4,11 +4,20 @@ import os
 import sys
 
 from termcolor import colored
-from typing import Iterator
+from typing import Iterator, List
 
 from appxtractor import folder_for_app, SignalIntelligence
 from bundle.bundle import Bundle
 from misc.logger import create_logger
+
+
+class Selection(str, enum.Enum):
+    ALL = "all"
+    MAS = "mas"
+
+    @classmethod
+    def choices(cls) -> List[str]:
+        return [x.value for x in cls]
 
 
 class Result(str, enum.Enum):
@@ -38,7 +47,12 @@ class Driver(abc.ABC):
         self.name = name
         self.logger = create_logger(name)
 
-    def run(self, apps_dir: str, out_dir: str) -> None:
+    def run(
+        self,
+        apps_dir: str,
+        out_dir: str,
+        select: Selection = Selection.ALL,
+    ) -> None:
         if not os.path.exists(apps_dir):
             print(f"Directory does not exist: {apps_dir}", file=sys.stderr)
             exit(1)
@@ -52,6 +66,10 @@ class Driver(abc.ABC):
                 break
 
             app = Bundle.make(app_dir)
+
+            if select == Selection.MAS and not app.is_mas_app():
+                continue
+
             app_out_dir = folder_for_app(out_dir, app)
 
             os.makedirs(app_out_dir, exist_ok=True)
