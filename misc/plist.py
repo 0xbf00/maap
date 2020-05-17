@@ -61,4 +61,7 @@ def parse_resilient(filepath: str) -> dict:
         raise ValueError("File does not exist.")
 
     with open(filepath, "rb") as plistFile:
-        return parse_resilient_bytes(plistFile.read())
+        content = plistFile.read()
+        if not content.startswith(b'bplist'):
+            content = content.strip()
+        return parse_resilient_bytes(content)
