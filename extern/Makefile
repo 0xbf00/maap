@@ -1,4 +1,4 @@
-PROGRAMS = xpc_vuln_checker plist_sanitizer jtool simbple sandbox_check sandbox_status sandbox_container_path_for_pid compile_sb
+PROGRAMS = xpc_vuln_checker jtool simbple sandbox_check sandbox_status sandbox_container_path_for_pid compile_sb
 
 all: $(PROGRAMS)
 
@@ -7,9 +7,6 @@ compile_sb: compile_sb.c
 
 xpc_vuln_checker: xpc_vuln_checker.c
 	$(CC) -o xpc_vuln_checker xpc_vuln_checker.c
-
-plist_sanitizer: plist_sanitizer.m
-	$(CC) -o plist_sanitizer plist_sanitizer.m -framework Foundation
 
 jtool:
 	curl -O http://www.newosxbook.com/tools/jtool.tar

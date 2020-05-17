@@ -38,16 +38,16 @@ def parse_resilient_bytes(b: bytes) -> dict:
     try:
         return tdict(plistlib.loads(b))
     except:
-        plist_sanitizer = tool_named("plist_sanitizer")
-        returncode, results = plist_sanitizer(input=b)
-
-        if returncode != 0:
-            raise ValueError("Unable to correct PLIST file.")
-        else:
-            try:
-                return tdict(plistlib.loads(results))
-            except:
-                raise ValueError("Unable to parse PLIST file.")
+        plutil = subprocess.run(
+            ['plutil' '-convert', 'xml1', '-o', '/dev/stdout', '-'],
+            check=True,
+            capture_output=True,
+            input=b,
+        )
+        try:
+            return tdict(plistlib.loads(plutil.stdout.decode()))
+        except:
+            raise ValueError("Unable to parse PLIST file.")
 
 
 def parse_resilient(filepath: str) -> dict:
