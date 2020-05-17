@@ -10,6 +10,7 @@ Tool to install (and purchase) apps from the MAS, in an automatic fashion
 
 import time
 import argparse
+import enum
 
 from os import popen
 
@@ -18,6 +19,15 @@ from misc.os_support import os_is_compatible
 import misc.itunes_api as itunes_api
 
 logger = create_logger('appstaller')
+
+
+class Operation(str, enum.Enum):
+    PURCHASE = "purchase"
+    INSTALL = "install"
+    UPGRADE = "upgrade"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class MacApp:
@@ -50,22 +60,19 @@ class MacApp:
         return self.api_result.get('minimumOsVersion')
 
 
-def install_app(item_id: str, is_update = False, force_install = False) -> bool:
-    logger.info("Attempting to install {}. (As update? {})".format(item_id, is_update))
+def install_app(item_id: str, operation: Operation) -> bool:
+    logger.info(f"Attempting to {operation} {item_id}.")
 
-    if is_update:
-        command_str = "mas install {}".format(item_id)
-    else:
-        command_str = "mas purchase {}".format(item_id)
-
-    if force_install:
-        command_str += " --force"
+    command_str = f"mas {operation} {item_id}"
 
     cmd_handle = popen(command_str)
     mas_log = cmd_handle.read()
     cmd_handle.close()
 
     logger.info(mas_log)
+
+    if operation == Operation.PURCHASE and 'has already been purchased' in mas_log:
+        return install_app(item_id, Operation.INSTALL)
 
     return "Installed" in mas_log
 
@@ -93,7 +100,7 @@ def main():
 
             if current_price == 0.0 and min_version_required and os_is_compatible(min_version_required):
                 # Attempt to purchase free app
-                success = install_app(trackId, is_update=False, force_install=False)
+                success = install_app(trackId, Operation.PURCHASE)
                 if not success:
                     logger.info("Unable to install app with trackId {}".format(trackId))
 
@@ -116,7 +123,7 @@ def main():
 
             if current_price == 0.0 and min_version_required and not min_version_required.startswith('10.13'):
                 # Attempt to install update for previously purchased free app
-                success = install_app(trackId, is_update=True, force_install=True)
+                success = install_app(trackId, Operation.UPGRADE)
                 if not success:
                     logger.info("Unable to install app with trackId {}".format(trackId))
 
